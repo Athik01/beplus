@@ -7,7 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'dart:typed_data';
-
+import 'package:number_to_words/number_to_words.dart';
 class BillsGenerator {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isNoUpdate = true;
@@ -257,9 +257,9 @@ class BillsGenerator {
             TextButton(
               onPressed: () {
                 // Parse the values from the text controllers
-                double cgst = double.tryParse(cgstController.text) ?? 0;
-                double sgst = double.tryParse(sgstController.text) ?? 0;
-                gstPercentage = cgst + sgst; // Calculate GST Percentage
+                cgstPercentage = double.tryParse(cgstController.text) ?? 0;
+                sgstPercentage = double.tryParse(sgstController.text) ?? 0;
+                gstPercentage = cgstPercentage + sgstPercentage; // Calculate GST Percentage
 
                 // Parse discount percentage and calculate discount price
                 discount = double.tryParse(discountController.text) ?? 0;
@@ -412,13 +412,12 @@ class BillsGenerator {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: PdfPageFormat.a3,
         build: (pw.Context context) {
-          double discountAmount = totalAmount * (discount / 100);
-          discountPrice = totalAmount - discountAmount;
           double taxAmount = totalAmount * (gstPercentage / 100);
           double grandTotal = totalAmount + taxAmount;
-
+          double discountAmount = grandTotal * (discount / 100);
+          discountPrice = discountAmount;
           return pw.Padding(
             padding: pw.EdgeInsets.all(24),
             child: pw.Column(
@@ -429,140 +428,288 @@ class BillsGenerator {
                   mainAxisAlignment: pw.MainAxisAlignment.center,
                   children: [
                     pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,  // Centered the shop name
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
+                        // Shop name with stylish design
+                        pw.Container(
+                          margin: const pw.EdgeInsets.only(bottom: 5), // Add spacing below shop name
+                          child: pw.Text(
+                            '$shopName',
+                            style: pw.TextStyle(
+                              fontSize: 42, // Larger font for emphasis
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColor.fromHex('#008080'), // Teal color
+                              font: ttf,
+                            ),
+                          ),
+                        ),
+                        // Decorative line below shop name
+                        pw.Container(
+                          width: 150,
+                          height: 2,
+                          color: PdfColor.fromHex('#20B2AA'), // Lighter teal for subtle decoration
+                          margin: const pw.EdgeInsets.only(bottom: 10), // Spacing below the line
+                        ),
+                        // Date with additional styling
                         pw.Text(
-                          '$shopName',  // Centered shop name
+                          'Date: ${DateTime.now().toString().split(' ')[0]}',
                           style: pw.TextStyle(
-                            fontSize: 40,  // Slightly larger font for better prominence
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColor.fromInt(Colors.teal.value),
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.normal,
+                            color: PdfColor.fromHex('#004D40'), // Dark teal for contrast
                             font: ttf,
                           ),
                         ),
-                        pw.Text(
-                          'Date: ${DateTime.now().toString().split(' ')[0]}',  // Date formatted to 'YYYY-MM-DD'
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            font: ttf,
-                            color: PdfColor.fromInt(Colors.teal.value),
+                        // Additional tagline or subtitle
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 5), // Add spacing above the tagline
+                          child: pw.Text(
+                            'Your Trusted Partner in Quality Products',
+                            style: pw.TextStyle(
+                              fontSize: 10,
+                              fontStyle: pw.FontStyle.italic,
+                              color: PdfColor.fromHex('#20B2AA'), // Light teal for subtlety
+                              font: ttf,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-
-// Add space between the header and Billed To section
                 pw.SizedBox(height: 20),
+                pw.Container(
+                  padding: pw.EdgeInsets.all(10), // Add padding around the content
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColor.fromHex('#008080'), width: 1), // Teal border
+                    borderRadius: pw.BorderRadius.circular(6), // Rounded corners for a sleek look
+                    color: PdfColor.fromHex('#F0F8F8'), // Light teal background
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.start,
+                    crossAxisAlignment: pw.CrossAxisAlignment.start, // Align items to the top
+                    children: [
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          // Phone Information
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Phone: ',
+                                style: pw.TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#008080'), // Teal for key
+                                ),
+                              ),
+                              pw.Text(
+                                '$mobile',
+                                style: pw.TextStyle(
+                                  fontSize: 14,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#2e8b57'), // Dark teal for value
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 6),
 
-// Add the left-aligned contact information (Phone, Email, Address) above "Billed To"
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.start,
-                  children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Phone: $mobile',
-                          style: pw.TextStyle(
-                            fontSize: 14,  // Increased font size for clarity
-                            font: ttf,
-                            color: PdfColor.fromInt(Colors.teal.value),
+                          // Email Information
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Email: ',
+                                style: pw.TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Text(
+                                '$email',
+                                style: pw.TextStyle(
+                                  fontSize: 14,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#2e8b57'),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        pw.SizedBox(height: 5),  // Added spacing between fields
-                        pw.Text(
-                          'Email: $email',
-                          style: pw.TextStyle(
-                            fontSize: 14,
-                            font: ttf,
-                            color: PdfColor.fromInt(Colors.teal.value),
+                          pw.SizedBox(height: 6),
+
+                          // Address Information with Wrapping
+                          pw.Row(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'Address: ',
+                                style: pw.TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Expanded(
+                                child: pw.Text(
+                                  '$address',
+                                  style: pw.TextStyle(
+                                    fontSize: 14,
+                                    font: ttf,
+                                    color: PdfColor.fromHex('#2e8b57'),
+                                  ),
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        pw.SizedBox(height: 5),
-                        pw.Text(
-                          'Address: $address',
-                          style: pw.TextStyle(
-                            fontSize: 14,
-                            font: ttf,
-                            color: PdfColor.fromInt(Colors.teal.value),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
+
 
 // Billed To section (after the contact information)
                 pw.SizedBox(height: 10),
-
                 // Billed To
-                pw.Text(
-                  'Billed To:',
-                  style: pw.TextStyle(
-                    fontSize: 20, // Increased font size for better emphasis
-                    fontWeight: pw.FontWeight.bold,
-                    font: ttf,
-                    color: PdfColor.fromHex('#008080'), // Teal color
-                  ),
-                ),
-                pw.SizedBox(height: 8), // Increased spacing after the header
-
-                pw.Text(
-                  'Name: $custName',
-                  style: pw.TextStyle(
-                    fontSize: 16, // Slightly larger font size for better readability
-                    font: ttf,
-                    color: PdfColor.fromHex('#2e8b57'), // Darker teal for a better contrast
-                  ),
-                ),
-                pw.SizedBox(height: 4), // Small space between fields
-
-                pw.Text(
-                  'Shop Name: $custShop',
-                  style: pw.TextStyle(
-                    fontSize: 16,
-                    font: ttf,
-                    color: PdfColor.fromHex('#2e8b57'),
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-
-// Address in a container with padding and wrapping
-                pw.Container(
-                  width: 500,
-                  padding: pw.EdgeInsets.all(5), // Added padding for the address container
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColor.fromHex('#008080'), width: 1), // Border in teal color
-                    borderRadius: pw.BorderRadius.circular(4), // Rounded corners for the address box
-                  ),
-                  child: pw.Text(
-                    'Address: $custAddr',
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      font: ttf,
-                      color: PdfColor.fromHex('#2e8b57'),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    // Header: "Billed To"
+                    pw.Text(
+                      'Billed To:',
+                      style: pw.TextStyle(
+                        fontSize: 22, // Increased size for prominence
+                        fontWeight: pw.FontWeight.bold,
+                        font: ttf,
+                        color: PdfColor.fromHex('#008080'), // Teal for consistency
+                      ),
                     ),
-                    softWrap: true,
-                    overflow: pw.TextOverflow.visible,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
+                    pw.SizedBox(height: 10), // Extra spacing for separation
 
-                pw.Text(
-                  'Mobile Number: $custMobile',
-                  style: pw.TextStyle(
-                    fontSize: 16,
-                    font: ttf,
-                    color: PdfColor.fromHex('#2e8b57'),
-                  ),
+                    // Customer Details in Key-Value format
+                    pw.Container(
+                      padding: pw.EdgeInsets.all(10), // Add padding for a neat layout
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColor.fromHex('#008080'), width: 1), // Teal border
+                        borderRadius: pw.BorderRadius.circular(6), // Rounded corners
+                        color: PdfColor.fromHex('#F0F8F8'), // Light teal background for contrast
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          // Customer Name
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Name: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Text(
+                                '$custName',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#2e8b57'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 6),
+
+                          // Customer Shop Name
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Shop Name: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Text(
+                                '$custShop',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#2e8b57'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 6),
+
+                          // Customer Address with wrapping
+                          pw.Row(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'Address: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Expanded(
+                                child: pw.Text(
+                                  '$custAddr',
+                                  style: pw.TextStyle(
+                                    fontSize: 14,
+                                    font: ttf,
+                                    color: PdfColor.fromHex('#2e8b57'),
+                                  ),
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 6),
+
+                          // Customer Mobile Number
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Mobile Number: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Text(
+                                '$custMobile',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  font: ttf,
+                                  color: PdfColor.fromHex('#2e8b57'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    pw.SizedBox(height: 10), // Additional spacing after the details box
+                  ],
                 ),
-                pw.SizedBox(height: 10), // Final spacing for visual balance
 
                 // Table Rows
                 pw.Table(
-                  border: pw.TableBorder.all(width: 0.5), // Adds lines between rows and columns
+                  border: pw.TableBorder.all(width: 0.5), // Adds borders for the grid
                   columnWidths: {
                     0: pw.FlexColumnWidth(3), // Column for product name
                     1: pw.FlexColumnWidth(1), // Column for size
@@ -571,62 +718,77 @@ class BillsGenerator {
                     4: pw.FlexColumnWidth(1), // Column for amount
                   },
                   children: [
-                    // Table header
+                    // Table header with dark teal background
                     pw.TableRow(
-                      decoration: pw.BoxDecoration(color: PdfColor.fromHex('#008080')), // Teal background
+                      decoration: pw.BoxDecoration(color: PdfColor.fromHex('#004d4d')), // Dark teal
                       children: [
-                        pw.Text(
-                          'Product Name',
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#ffffff'), // White text color
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(4),
+                          child: pw.Text(
+                            'Product Name',
+                            style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#ffffff'), // White text color
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          'Size',
-                          textAlign: pw.TextAlign.center,
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#ffffff'), // White text color
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(4),
+                          child: pw.Text(
+                            'Size',
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#ffffff'), // White text color
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          'Quantity',
-                          textAlign: pw.TextAlign.center,
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#ffffff'), // White text color
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(4),
+                          child: pw.Text(
+                            'Quantity',
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#ffffff'), // White text color
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          'Price',
-                          textAlign: pw.TextAlign.center,
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#ffffff'), // White text color
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(4),
+                          child: pw.Text(
+                            'Price',
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#ffffff'), // White text color
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          'Amount',
-                          textAlign: pw.TextAlign.center,
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#ffffff'), // White text color
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(4),
+                          child: pw.Text(
+                            'Amount',
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#ffffff'), // White text color
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    // Table rows
+                    // Table rows with alternating light teal, white, and green colors
                     ...orders.map((order) {
                       var matchedProduct = productsData.firstWhere(
                             (product) => product['productId'] == order['productId'],
@@ -642,16 +804,38 @@ class BillsGenerator {
                           var sizeData = matchedProduct['size'][sizeKey];
                           double displayPrice = sizeData['price'] ?? 0.0;
                           int quantity = value;
+                          if (quantity == 0) return;
                           double amount = displayPrice * quantity;
-
                           sizeRows.add(
                             pw.TableRow(
+                              decoration: pw.BoxDecoration(
+                                color: sizeRows.length % 3 == 0
+                                    ? PdfColor.fromHex('#e0f7f7') // Light teal for first row
+                                    : sizeRows.length % 3 == 1
+                                    ? PdfColor.fromHex('#f9fff9') // White for second row
+                                    : PdfColor.fromHex('#d8f3dc'), // Light green for third row
+                              ),
                               children: [
-                                pw.Text(matchedProduct['name'] ?? (order['description'] ?? ''), style: pw.TextStyle(fontSize: 12, font: ttf)),
-                                pw.Text(sizeKey, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
-                                pw.Text(quantity.toString(), textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
-                                pw.Text(displayPrice.toString(), textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
-                                pw.Text('₹${amount.toStringAsFixed(2)}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
+                                pw.Padding(
+                                  padding: pw.EdgeInsets.all(4),
+                                  child: pw.Text(matchedProduct['name'] ?? (order['description'] ?? ''), style: pw.TextStyle(fontSize: 12, font: ttf)),
+                                ),
+                                pw.Padding(
+                                  padding: pw.EdgeInsets.all(4),
+                                  child: pw.Text(sizeKey, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
+                                ),
+                                pw.Padding(
+                                  padding: pw.EdgeInsets.all(4),
+                                  child: pw.Text(quantity.toString(), textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
+                                ),
+                                pw.Padding(
+                                  padding: pw.EdgeInsets.all(4),
+                                  child: pw.Text(displayPrice.toString(), textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
+                                ),
+                                pw.Padding(
+                                  padding: pw.EdgeInsets.all(4),
+                                  child: pw.Text('₹${amount.toStringAsFixed(2)}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, font: ttf)),
+                                ),
                               ],
                             ),
                           );
@@ -663,139 +847,208 @@ class BillsGenerator {
                   ],
                 ),
                 pw.SizedBox(height: 10),
-
-                // Subtotal, Tax, and Grand Total
-                pw.Divider(), // Divider for separation
-                pw.SizedBox(height: 10), // Add some spacing for better readability
-
-// Subtotal Section
                 pw.Table(
-                  border: pw.TableBorder.all(color: PdfColor.fromHex('#008080')), // Border color for the table
+                  border: pw.TableBorder.all(color: PdfColor.fromHex('#008080'), width: 1.0), // Border for grid
                   children: [
                     // Subtotal Row
                     pw.TableRow(
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#f0f8ff'), // Light blue for alternate row
+                      ),
                       children: [
-                        pw.Text(
-                          'Subtotal:',
-                          style: pw.TextStyle(
-                            fontSize: 16,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#008080'), // Teal color for label
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'Subtotal:',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#008080'),
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          '₹$totalAmount',
-                          style: pw.TextStyle(
-                            fontSize: 16,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#2e8b57'), // Slightly darker color for amount
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            '₹$totalAmount',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#2e8b57'),
+                            ),
+                            textAlign: pw.TextAlign.right,
                           ),
-                          textAlign: pw.TextAlign.right, // Aligning amount to the right
                         ),
                       ],
                     ),
                     // GST Row
                     pw.TableRow(
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#ffffff'), // White for alternate row
+                      ),
                       children: [
-                        pw.Text(
-                          'CGST: $cgstPercentage%, SGST: $sgstPercentage%',
-                          style: pw.TextStyle(
-                            fontSize: 16,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#008080'), // Teal color for the text
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'CGST: $cgstPercentage%, SGST: $sgstPercentage%',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#008080'),
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          '₹$taxAmount',
-                          style: pw.TextStyle(
-                            fontSize: 16,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#2e8b57'), // Slightly darker color for amount
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            '₹$taxAmount',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#2e8b57'),
+                            ),
+                            textAlign: pw.TextAlign.right,
                           ),
-                          textAlign: pw.TextAlign.right, // Aligning amount to the right
-                        ),
-                      ],
-                    ),
-                    // Discount Row
-                    pw.TableRow(
-                      children: [
-                        pw.Text(
-                          'Discount: $discount%',
-                          style: pw.TextStyle(
-                            fontSize: 16,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#008080'), // Teal color for label
-                          ),
-                        ),
-                        pw.Text(
-                          '₹$discountPrice',  // Displaying discount price
-                          style: pw.TextStyle(
-                            fontSize: 16,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#ff6347'), // Red color for discount
-                          ),
-                          textAlign: pw.TextAlign.right, // Aligning amount to the right
                         ),
                       ],
                     ),
                     // Grand Total Row
                     pw.TableRow(
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#d3f9d8'), // Light green for total row
+                      ),
                       children: [
-                        pw.Text(
-                          'Grand Total:',
-                          style: pw.TextStyle(
-                            fontSize: 18,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#008080'), // Teal color for label
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'Grand Total:',
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#008080'),
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          '₹${grandTotal}',  // Subtracting discount from grand total
-                          style: pw.TextStyle(
-                            fontSize: 18,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#2e8b57'), // Slightly darker color for amount
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            '₹${grandTotal}',
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#2e8b57'),
+                            ),
+                            textAlign: pw.TextAlign.right,
                           ),
-                          textAlign: pw.TextAlign.right, // Aligning amount to the right
+                        ),
+                      ],
+                    ),
+                    // Discount Row
+                    pw.TableRow(
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#f0f8ff'), // Light blue for alternate row
+                      ),
+                      children: [
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'Discount: $discount%',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#008080'),
+                            ),
+                          ),
+                        ),
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            '₹$discountPrice',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#ff6347'),
+                            ),
+                            textAlign: pw.TextAlign.right,
+                          ),
                         ),
                       ],
                     ),
                     // Final Price After Discount Row
                     pw.TableRow(
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#d3f9d8'), // Light green for total row
+                      ),
                       children: [
-                        pw.Text(
-                          'Final Price After Discount:',
-                          style: pw.TextStyle(
-                            fontSize: 18,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#008080'), // Teal color for label
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'Final Price After Discount:',
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#008080'),
+                            ),
                           ),
                         ),
-                        pw.Text(
-                          '₹${grandTotal - discountPrice}',  // Displaying final price after discount
-                          style: pw.TextStyle(
-                            fontSize: 18,
-                            fontWeight: pw.FontWeight.bold,
-                            font: ttf,
-                            color: PdfColor.fromHex('#2e8b57'), // Slightly darker color for amount
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            '₹${(grandTotal - discountPrice).toStringAsFixed(2)}',
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#2e8b57'),
+                            ),
+                            textAlign: pw.TextAlign.right,
                           ),
-                          textAlign: pw.TextAlign.right, // Aligning amount to the right
+                        ),
+                      ],
+                    ),
+                    pw.TableRow(
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#d3f9d8'), // Light green for total row
+                      ),
+                      children: [
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'Final Amount in Words',
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#008080'),
+                            ),
+                          ),
+                        ),
+                        pw.Padding(
+                          padding: pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            convertNumberToWords((grandTotal - discountPrice)),
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              font: ttf,
+                              color: PdfColor.fromHex('#2e8b57'),
+                            ),
+                            textAlign: pw.TextAlign.right,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
-
-                pw.SizedBox(height: 10), // Add spacing at the end for visual balance
                 pw.Divider(),
                 pw.Center(
                   child: pw.Text(
@@ -808,6 +1061,8 @@ class BillsGenerator {
                     ),
                   ),
                 ),
+                pw.SizedBox(height: 10), // Add spacing at the end for visual balance
+                pw.Divider(),
               ],
             ),
           );
@@ -816,5 +1071,10 @@ class BillsGenerator {
     );
 
     return pdf.save();
+  }
+
+  String convertNumberToWords(double d) {
+    int integerPart = d.toInt();
+    return "${NumberToWord().convert('en-in',integerPart)} Only/-";
   }
 }

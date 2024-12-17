@@ -192,7 +192,7 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
                                   ? Image.memory(
                                 imageBytes,
                                 width: double.infinity,
-                                height: 187,
+                                height: 184,
                                 fit: BoxFit.cover,
                               )
                                   : Image.asset(

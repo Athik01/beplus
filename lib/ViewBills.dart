@@ -157,32 +157,33 @@ class _ViewBillsState extends State<ViewBills> {
               children: [
                 // Horizontal Calendar, displayed on top when visible
                 if (isCalendarVisible)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(15),
-                          topRight: Radius.circular(15),
-                          bottomLeft: Radius.circular(15),
-                          bottomRight: Radius.circular(15),
-                        ), // Rounded corners for the container
-                      ),
-                      child: HorizontalWeekCalendar(
-                        minDate: DateTime.now().subtract(Duration(days: 30)),
-                        maxDate: DateTime.now().add(Duration(days: 30)),
-                        initialDate: selectedDate,
-                        onDateChange: (date) {
-                          setState(() {
-                            selectedDate = date;
-                            isCalendarVisible = false;
-                          });
-                        },
-                      ),
+                  SafeArea(
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15), // Rounded corners for the container
+                            ),
+                            child: HorizontalWeekCalendar(
+                              minDate: DateTime.now().subtract(Duration(days: 30)),
+                              maxDate: DateTime.now().add(Duration(days: 30)),
+                              initialDate: selectedDate,
+                              onDateChange: (date) {
+                                setState(() {
+                                  selectedDate = date;
+                                  isCalendarVisible = false;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 Expanded(
