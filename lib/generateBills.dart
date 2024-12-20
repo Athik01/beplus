@@ -86,6 +86,34 @@ class BillsGenerator {
           final base64Pdf = base64Encode(Uint8List.fromList(pdfBytes));
           billData['pdfBase64'] = base64Pdf;
           await _firestore.collection('bills').add(billData);
+          var statementsRef = _firestore.collection('statements');
+          var querySnapshot = await statementsRef
+              .where('ownerId', isEqualTo: ownerId)
+              .where('customerId', isEqualTo: customerID)
+              .get();
+
+          if (querySnapshot.docs.isNotEmpty) {
+            // Update existing document
+            var doc = querySnapshot.docs.first;
+            double existingCredit = doc['credit'] ?? 0;
+            double existingDebit = doc['debit'] ?? 0;
+            double newCredit = existingCredit + totalAmount;
+            double newBalance = newCredit - existingDebit;
+
+            await statementsRef.doc(doc.id).update({
+              'credit': newCredit,
+              'balance': newBalance,
+            });
+          } else {
+            // Create a new document
+            await statementsRef.add({
+              'ownerId': ownerId,
+              'customerId': customerID,
+              'credit': totalAmount,
+              'debit': 0,
+              'balance': totalAmount,
+            });
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -333,12 +361,50 @@ class BillsGenerator {
 
   Future<Map<String, dynamic>?> _fetchOrderData(String orderId) async {
     try {
+      // Fetch the order document from the orders collection
       var orderSnapshot = await _firestore.collection('orders').doc(orderId).get();
+
       if (orderSnapshot.exists) {
-        // Exclude sensitive fields like `userId` if needed
         Map<String, dynamic> orderData = orderSnapshot.data()!;
+
+        // Extract productId and selectedSize from the orders collection
+        String productId = orderData['productId'];
+        Map<String, dynamic> selectedSize = orderData['selectedSize'];
+
+        // Fetch the matching product document from the products collection
+        var productSnapshot = await _firestore.collection('products').doc(productId).get();
+
+        if (productSnapshot.exists) {
+          Map<String, dynamic> productData = productSnapshot.data()!;
+
+          // Fetch the price map from the product document
+          Map<String, dynamic> priceMap = productData['price'];
+
+          // Update the quantity in the price map based on the selectedSize
+          selectedSize.forEach((size, selectedQuantity) {
+            if (priceMap.containsKey(size)) {
+              Map<String, dynamic> sizeDetails = priceMap[size];
+              int currentQuantity = sizeDetails['quantity'];
+              num newQuantity = currentQuantity - selectedQuantity;
+
+              // Ensure quantity does not go below zero
+              sizeDetails['quantity'] = newQuantity >= 0 ? newQuantity : 0;
+
+              // Update the price map in the product document
+              priceMap[size] = sizeDetails;
+            }
+          });
+
+          // Update the product document in Firestore
+          await _firestore.collection('products').doc(productId).update({
+            'price': priceMap,
+          });
+        }
+
+        // Return the order data excluding sensitive fields if needed
         return orderData;
       }
+
       return null;
     } catch (e) {
       print("Error fetching order data: $e");
@@ -1075,6 +1141,12 @@ class BillsGenerator {
 
   String convertNumberToWords(double d) {
     int integerPart = d.toInt();
-    return "${NumberToWord().convert('en-in',integerPart)} Only/-";
+    String words = NumberToWord().convert('en-in', integerPart);
+    String titleCaseWords = words.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1);
+    }).join(' ');
+    return "$titleCaseWords Only/-";
   }
+
 }
