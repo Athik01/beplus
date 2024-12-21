@@ -11,6 +11,8 @@ import 'package:beplus/login.dart';
 import 'package:beplus/category_details.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:beplus/owner_details.dart';
+
+import 'MyPurchases.dart';
 class HomePage1 extends StatefulWidget {
   final User? user;
 
@@ -705,7 +707,7 @@ class _HomePage1State extends State<HomePage1> {
                                 const SizedBox(height: 16),
                                 // Conditional cancel button display based on status
 
-                                if (status == 'Not Confirmed' || status != 'Confirmed') // Adjust the condition as needed
+                                if (status == 'Not Confirmed' || status != 'Confirmed' || status != 'done') // Adjust the condition as needed
                                   Center(
                                     child: Padding(
                                       padding: const EdgeInsets.all(20.0), // Padding around the button
@@ -843,63 +845,66 @@ class _HomePage1State extends State<HomePage1> {
                       },
                     );
                   },
-                  child: Card(
-                    margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                    elevation: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          ClipOval(
-                            child: SizedBox(
-                              height: 100, // Adjust the image height
-                              width: 100, // Adjust the image width for a smaller size
-                              child: image,
-                            ),
-                          ),
-                          const SizedBox(width: 16), // Space between the image and details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center, // Center the content vertically
-                              children: [
-                                Text(
-                                  '$productName',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Visibility(
+                      visible: status != 'done',
+                      child: Card(
+                        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              ClipOval(
+                                child: SizedBox(
+                                  height: 100, // Adjust the image height
+                                  width: 100, // Adjust the image width for a smaller size
+                                  child: image,
                                 ),
-                                const SizedBox(height: 8),
-                                Row(
+                              ),
+                              const SizedBox(width: 16), // Space between the image and details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center, // Center the content vertically
                                   children: [
                                     Text(
-                                      status == 'Confirmed' ? 'Confirmed' : '$status',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: status == 'Confirmed' ? Colors.teal : Colors.grey,
-                                      ),
+                                      '$productName',
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                     ),
-                                    if (status == 'Confirmed')
-                                      Padding(
-                                        padding: const EdgeInsets.only(left: 4.0),
-                                        child: Icon(
-                                          Icons.check_circle_rounded,
-                                          color: Colors.blue,
-                                          size: 16,
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          status == 'Confirmed' ? 'Confirmed' : '$status',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: status == 'Confirmed' ? Colors.teal : Colors.grey,
+                                          ),
                                         ),
-                                      ),
+                                        if (status == 'Confirmed')
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 4.0),
+                                            child: Icon(
+                                              Icons.check_circle_rounded,
+                                              color: Colors.blue,
+                                              size: 16,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '₹${amount.toStringAsFixed(2)}',
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal),
+                                    ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '₹${amount.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
                 );
               },
             );
@@ -959,6 +964,18 @@ class _HomePage1State extends State<HomePage1> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => ProfilePage()),
+                    );
+                  }),
+                  Divider(
+                    color: Colors.grey.shade300,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  _buildDrawerItem(Icons.currency_rupee, 'My Purchases', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MyPurchases()),
                     );
                   }),
                   Divider(
@@ -1295,7 +1312,7 @@ class _HomePage1State extends State<HomePage1> {
               Tab(icon: Icon(Icons.home), text: 'Home'),
               Tab(icon: Icon(Icons.shopping_cart), text: 'Shop'),
               Tab(icon: Icon(Icons.store), text: 'Seller'),
-              Tab(icon: Icon(Icons.receipt), text: 'Bills'),
+              Tab(icon: Icon(Icons.receipt), text: 'My Orders'),
             ],
           ),
         ),

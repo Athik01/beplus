@@ -156,6 +156,7 @@ class OrderPage extends StatelessWidget {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -354,6 +355,20 @@ class OrderPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: GestureDetector(
+                              onTap: () {
+                                // Add action for heart icon click (e.g., add to favorites)
+                              },
+                              child: Icon(
+                                Icons.favorite_border, // Heart outline icon
+                                size: 32.0,
+                                color: Colors.red,  // Red color for heart
+                              ),
+                            ),
+                          ),
+                          Divider(),
                           Text(
                             'Product Name',
                             style: TextStyle(
@@ -381,7 +396,7 @@ class OrderPage extends StatelessWidget {
                           SizedBox(height: 8),
                           Text(
                             description,
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400,fontStyle: FontStyle.italic),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, fontStyle: FontStyle.italic),
                           ),
                           SizedBox(height: 12),
                           Divider(),
@@ -679,7 +694,7 @@ class OrderPage extends StatelessWidget {
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.teal.shade700,
-                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: 70, vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -701,178 +716,7 @@ class OrderPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Row(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              // Show dialog when button is pressed
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  Map<String, int> selectedQuantity = {}; // Track selected quantities
-                                  final sizes = productData['size'] as List<dynamic>; // List of available sizes
 
-                                  return StatefulBuilder(
-                                    builder: (context, setState) {
-                                      return AlertDialog(
-                                        title: Text(
-                                          'Select Size and Quantity',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.teal.shade700,
-                                          ),
-                                        ),
-                                        content: SingleChildScrollView(
-                                          child: Column(
-                                            children: sizes.map((size) {
-                                              final sizeDetails = priceData[size]!; // Get details for each size
-                                              final price = sizeDetails['price'];
-                                              final availableQuantity = sizeDetails['quantity'];
-
-                                              // Initialize quantity to 0 if not already selected
-                                              if (!selectedQuantity.containsKey(size)) {
-                                                selectedQuantity[size] = 0;
-                                              }
-
-                                              return Padding(
-                                                padding: EdgeInsets.only(bottom: 16.0), // Spacing between size options
-                                                child: Card(
-                                                  elevation: 5,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12),
-                                                  ),
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(12),
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        Chip(
-                                                          label: Text(
-                                                            'Size: $size - Price: \₹${price}',
-                                                            style: TextStyle(
-                                                              fontSize: 14,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: Colors.white,
-                                                            ),
-                                                          ),
-                                                          backgroundColor: Colors.teal.shade400,
-                                                        ),
-                                                        SizedBox(height: 8),
-                                                        Text(
-                                                          'Available Quantity: $availableQuantity',
-                                                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                                                        ),
-                                                        SizedBox(height: 12),
-                                                        Row(
-                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                          children: [
-                                                            IconButton(
-                                                              icon: Icon(Icons.remove, color: Colors.teal),
-                                                              onPressed: () {
-                                                                if (selectedQuantity[size]! > 0) {
-                                                                  setState(() {
-                                                                    selectedQuantity[size] = selectedQuantity[size]! - 1;
-                                                                  });
-                                                                }
-                                                              },
-                                                            ),
-                                                            Text(
-                                                              'Quantity: ${selectedQuantity[size]}',
-                                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                                            ),
-                                                            IconButton(
-                                                              icon: Icon(Icons.add, color: Colors.teal),
-                                                              onPressed: () {
-                                                                if (selectedQuantity[size]! < availableQuantity) {
-                                                                  setState(() {
-                                                                    selectedQuantity[size] = selectedQuantity[size]! + 1;
-                                                                  });
-                                                                }
-                                                              },
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        Divider(color: Colors.teal.shade100),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context); // Close the dialog
-                                            },
-                                            style: TextButton.styleFrom(
-                                              foregroundColor: Colors.teal.shade700,
-                                            ),
-                                            child: Text('Cancel', style: TextStyle(fontSize: 16)),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              // Handle the purchase logic
-                                              print('Proceeding with selected quantities: $selectedQuantity');
-                                              Navigator.pop(context); // Close the dialog
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.teal.shade100,
-                                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            child: Text(
-                                              'Proceed to Checkout',
-                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 8.0),
-                                            child: Text(
-                                              '⚠️ To order multiple items, add them to the cart and check out later.',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.red.shade600,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal.shade700,
-                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 5, // Shadow effect
-                            ),
-                            icon: Icon(
-                              Icons.payment,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            label: Text(
-                              '  Purchase  ',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
                     ],
                   ),
                   SizedBox(height: 20),

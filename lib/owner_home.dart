@@ -13,6 +13,8 @@ import 'package:beplus/ViewBills.dart';
 import 'package:beplus/product_visibility.dart';
 import 'package:beplus/manage_parties.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+import 'ManageStatements.dart';
 class HomePage2 extends StatefulWidget {
   final User? user;
   HomePage2({Key? key, this.user}) : super(key: key);
@@ -264,10 +266,15 @@ class HomeScreen extends StatelessWidget {
               // Bills Card
               _buildGlassCard(
                 icon: Icons.receipt_long,
-                title: 'Bills',
+                title: 'Statements',
                 color: Colors.orangeAccent,
                 onTap: () {
-                  print('Navigating to Bills');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ManageStatements(userId: userId),
+                    ),
+                  );
                 },
               ),
             ],

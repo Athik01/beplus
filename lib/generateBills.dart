@@ -116,26 +116,31 @@ class BillsGenerator {
           }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                "Bill generated and stored successfully!",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle, // Checkmark symbol
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  SizedBox(width: 8), // Add some space between the icon and text
+                  Text(
+                    "Bill generated successfully!",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
-              backgroundColor: Colors.teal,
-              // A vibrant teal background
-              duration: Duration(seconds: 3),
-              // Customize the duration as needed
+              backgroundColor: Colors.green.shade600, // Vibrant green background
+              duration: Duration(seconds: 3), // Customize the duration as needed
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                    12), // Rounded corners for the SnackBar
+                borderRadius: BorderRadius.circular(12), // Rounded corners for the SnackBar
               ),
-              behavior: SnackBarBehavior.floating,
-              // Makes it float above other content
-              margin: EdgeInsets.all(16),
-              // Add margin around the SnackBar
+              behavior: SnackBarBehavior.floating, // Makes it float above other content
+              margin: EdgeInsets.all(16), // Add margin around the SnackBar
               elevation: 6, // Shadow effect
             ),
           );
