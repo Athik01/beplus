@@ -357,15 +357,102 @@ class OrderPage extends StatelessWidget {
                         children: [
                           Align(
                             alignment: Alignment.topLeft,
-                            child: GestureDetector(
-                              onTap: () {
-                                // Add action for heart icon click (e.g., add to favorites)
-                              },
-                              child: Icon(
-                                Icons.favorite_border, // Heart outline icon
-                                size: 32.0,
-                                color: Colors.red,  // Red color for heart
-                              ),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () async {
+                                    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+                                    try {
+                                      // Reference the Firestore collection and document
+                                      final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
+
+                                      // Fetch the product data
+                                      final productSnapshot = await productRef.get();
+
+                                      if (productSnapshot.exists) {
+                                        final productData = productSnapshot.data();
+
+                                        if (productData != null) {
+                                          // Ensure `likes` field exists
+                                          Map<String, dynamic> likes = productData['likes'] ?? {};
+
+                                          // Toggle like status
+                                          if (likes.containsKey(currentUserId)) {
+                                            likes.remove(currentUserId); // Unlike
+                                          } else {
+                                            likes[currentUserId] = true; // Like
+                                          }
+
+                                          // Update the `likes` field in Firestore
+                                          await productRef.update({'likes': likes});
+                                        }
+                                      } else {
+                                        print("Product does not exist");
+                                      }
+                                    } catch (e) {
+                                      print("Error updating likes: $e");
+                                    }
+                                  },
+                                  child: StreamBuilder<DocumentSnapshot>(
+                                    stream: FirebaseFirestore.instance.collection('products').doc(productId).snapshots(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState == ConnectionState.waiting) {
+                                        return Row(
+                                          children: [
+                                            Icon(
+                                              Icons.favorite_border, // Default icon while loading
+                                              size: 32.0,
+                                              color: Colors.red,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "0", // Default like count while loading
+                                              style: TextStyle(fontSize: 16.0, color: Colors.black),
+                                            ),
+                                          ],
+                                        );
+                                      }
+
+                                      if (snapshot.hasData && snapshot.data != null) {
+                                        final productData = snapshot.data!.data() as Map<String, dynamic>;
+                                        final likes = productData['likes'] ?? {};
+                                        final isLiked = likes.containsKey(FirebaseAuth.instance.currentUser?.uid);
+                                        final likeCount = likes.length;
+
+                                        return Row(
+                                          children: [
+                                            Icon(
+                                              isLiked ? Icons.favorite : Icons.favorite_border,
+                                              size: 32.0,
+                                              color: Colors.red,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "$likeCount", // Display the size of the likes map
+                                              style: TextStyle(fontSize: 16.0, color: Colors.black),
+                                            ),
+                                          ],
+                                        );
+                                      }
+
+                                      return Row(
+                                        children: [
+                                          Icon(
+                                            Icons.favorite_border, // Default icon in case of no data
+                                            size: 32.0,
+                                            color: Colors.red,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            "0", // Default like count in case of no data
+                                            style: TextStyle(fontSize: 16.0, color: Colors.black),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Divider(),
@@ -675,7 +762,7 @@ class OrderPage extends StatelessWidget {
                                           },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.teal.shade100,
-                                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                            padding: EdgeInsets.symmetric(horizontal: 39, vertical: 12),
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(12),
                                             ),
@@ -694,7 +781,7 @@ class OrderPage extends StatelessWidget {
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.teal.shade700,
-                              padding: EdgeInsets.symmetric(horizontal: 70, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: 112, vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),

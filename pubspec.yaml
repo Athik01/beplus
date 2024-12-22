@@ -46,6 +46,7 @@ dependencies:
   material_design_icons_flutter: ^5.0.0
   horizontal_week_calendar: ^0.0.18
   number_to_words: ^1.0.0
+  open_file: ^3.5.10
 dependency_overrides:
   intl: ^0.18.1
 dev_dependencies:

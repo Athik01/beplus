@@ -12,6 +12,8 @@ import 'package:beplus/category_details.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:beplus/owner_details.dart';
 
+import 'AddBills.dart';
+import 'CustomerBills.dart';
 import 'MyPurchases.dart';
 class HomePage1 extends StatefulWidget {
   final User? user;
@@ -954,6 +956,7 @@ class _HomePage1State extends State<HomePage1> {
               ),
             ),
           ),
+          SizedBox(height: 60),
           Expanded(
             child: Container(
               color: Colors.white, // White body background
@@ -984,20 +987,41 @@ class _HomePage1State extends State<HomePage1> {
                     indent: 16,
                     endIndent: 16,
                   ),
+                  _buildDrawerItem(Icons.shopping_bag, 'My Bills', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ViewCustomerBills(customerId: userId,)),
+                    );
+                  }),
+                  Divider(
+                    color: Colors.grey.shade300,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  _buildDrawerItem(Icons.shopping_bag_outlined, 'Purchase Bills', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AddCustomerBills(customerId: userId,)),
+                    );
+                  }),
+                  Divider(
+                    color: Colors.grey.shade300,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
                   _buildDrawerItem(
                     Icons.logout,
                     'Logout',
                         () async {
                       try {
-                        // Sign out from Firebase
                         await FirebaseAuth.instance.signOut();
-                        // Initialize GoogleSignIn
                         final GoogleSignIn googleSignIn = GoogleSignIn();
                         if (await googleSignIn.isSignedIn()) {
                           await googleSignIn.signOut();
                           await googleSignIn.disconnect();
                         }
-
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (context) => LoginApp()),
@@ -1018,24 +1042,54 @@ class _HomePage1State extends State<HomePage1> {
 
   Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.black, size: 28),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.teal.shade100,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.teal.shade50, // Light teal background
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade300,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(6.0),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.teal.shade700,
+                  size: 28,
+                ),
+              ),
+              title: Text(
+                title,
+                style: TextStyle(
+                  color: Colors.teal.shade800,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                size: 18,
+                color: Colors.teal.shade400,
+              ),
+            ),
           ),
         ),
-        hoverColor: Colors.teal.shade100,
-        tileColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        onTap: onTap,
-        trailing: Icon(Icons.arrow_forward_ios, size: 18, color: Colors.black45),
       ),
     );
   }

@@ -86,13 +86,21 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
         centerTitle: true, // This centers the title
-        backgroundColor: Colors.blueGrey, // Set background color to black
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade800, Colors.teal.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ), // Set background color to black
       ),
       body:
     Container(
     decoration: BoxDecoration(
     gradient: LinearGradient(
-    colors: [Colors.white, Colors.grey.shade800],
+    colors: [Colors.teal.shade100, Colors.teal.shade800],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     ),
@@ -183,7 +191,7 @@ class _ProfilePageState extends State<ProfilePage> {
           if (icon != null) ...[
             Icon(
               icon,
-              color: Colors.blueGrey[600],
+              color: Colors.teal[600],
               size: 26,
             ),
             SizedBox(width: 16),
@@ -192,8 +200,8 @@ class _ProfilePageState extends State<ProfilePage> {
             '$title: ',
             style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.w500,
-              color: Colors.blueGrey[800],
+              fontWeight: FontWeight.bold,
+              color: Colors.teal,
             ),
           ),
           SizedBox(width: 8),
@@ -204,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
               value ?? 'Not Available',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.blueGrey[600],
+                color: Colors.black,
               ),
               overflow: TextOverflow.ellipsis,
             ),
