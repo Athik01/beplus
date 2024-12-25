@@ -1,3 +1,4 @@
+import 'package:beplus/ViewBillScreen.dart';
 import 'package:flutter/material.dart';
 
 import 'CustomCustomerBill.dart';
@@ -116,10 +117,7 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
             SizedBox(height: 40),
           ],
         )
-            : Text(
-          'View Bills Screen',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+            : ViewBillsScreen(),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

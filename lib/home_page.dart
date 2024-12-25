@@ -956,7 +956,7 @@ class _HomePage1State extends State<HomePage1> {
               ),
             ),
           ),
-          SizedBox(height: 60),
+
           Expanded(
             child: Container(
               color: Colors.white, // White body background

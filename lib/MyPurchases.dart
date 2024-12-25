@@ -35,7 +35,7 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal.shade600, Colors.teal.shade200],
+              colors: [Colors.teal.shade800, Colors.teal.shade200],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

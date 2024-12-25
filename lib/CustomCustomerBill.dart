@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -25,7 +26,10 @@ class _CustomBillState extends State<CustomBill> {
   final TextEditingController sizeController = TextEditingController();
   double totalAmount = 0.0;
   double taxRate = 0.0; // Default tax rate
-
+  String custName = "";
+  String custShop = "";
+  String custAddr = "";
+  String custMobile = "";
   void addItem() {
     String itemName = itemNameController.text.trim();
     int quantity = int.tryParse(quantityController.text.trim()) ?? 0;
@@ -51,6 +55,68 @@ class _CustomBillState extends State<CustomBill> {
       _showSnackbar('Please provide valid item details.');
     }
   }
+
+  Future<void> processOrdersAndUpdateQuantity(
+      BuildContext context,
+      String currentUserId,
+      String itemNameController,
+      int sizeController,
+      int quantityController,
+      ) async {
+    try {
+      // Fetch orders for the current user that are marked as 'done'
+      QuerySnapshot ordersSnapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('userId', isEqualTo: currentUserId)
+          .where('status', isEqualTo: 'done')
+          .get();
+
+      // Check if no orders are found
+      if (ordersSnapshot.docs.isEmpty) {
+        print("No orders found.");
+        return;
+      }
+
+      // Process each order
+      for (var order in ordersSnapshot.docs) {
+        String productId = order['productId'];
+        DocumentSnapshot productSnapshot = await FirebaseFirestore.instance
+            .collection('products')
+            .doc(productId)
+            .get();
+
+        // Check if product exists and fetch its name
+        if (!productSnapshot.exists) {
+          continue; // Skip this iteration and check next order
+        }
+        String productName = productSnapshot['name'];
+        if (productName == itemNameController) {
+          var selectedSize = Map<String, dynamic>.from(
+              order['selectedSize']?.map((key, value) => MapEntry(key, value)) ?? {});
+          String selectedSizeKey = sizeController.toString();
+          if (selectedSize.containsKey(selectedSizeKey)) {
+            int currentQuantity = selectedSize[selectedSizeKey];
+            int quantityToSubtract = quantityController;
+            if (currentQuantity >= quantityToSubtract) {
+              selectedSize[selectedSizeKey] = currentQuantity - quantityToSubtract;
+              await FirebaseFirestore.instance.collection('orders').doc(order.id).update({
+                'selectedSize': selectedSize,
+              });
+              return;
+            } else {
+              print('Insufficient quantity for size $selectedSizeKey in $productName');
+            }
+          } else {
+            print('Size $selectedSizeKey not found in $productName');
+          }
+        }
+      }
+      print('No matching product found or quantity update unsuccessful.');
+    } catch (e) {
+      print('Error processing orders: $e');
+    }
+  }
+
 
   void updateTaxRate() {
     double enteredTax = double.tryParse(taxController.text.trim()) ?? 0.0;
@@ -79,8 +145,7 @@ class _CustomBillState extends State<CustomBill> {
   }
   void generateBill() async {
     String customerName = '';
-
-    // Show Dialog to get the customer's name
+    // Show the dialog to collect the customer name
     await showDialog(
       context: context,
       builder: (context) {
@@ -139,8 +204,17 @@ class _CustomBillState extends State<CustomBill> {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
+                        // Check if the customer name is provided
                         if (customerName.isNotEmpty) {
                           showGeneratedBill(customerName);
+                        } else {
+                          // Show an error message or handle the case when customer name is empty
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please enter a customer name.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
                         }
                       },
                       style: ButtonStyle(
@@ -169,16 +243,61 @@ class _CustomBillState extends State<CustomBill> {
     );
   }
 
+
   void showGeneratedBill(String customerName) async {
     double totalAmount = 0.0;
+
+    // Iterate through each bill item and calculate the total amount
     billItems.forEach((item) {
       totalAmount += item['itemTotal'];
     });
 
-    // Get current date and time
+    // You can use the totalAmount in the UI, for example, to display it in the bill.
+    print("Total Amount: $totalAmount");
+
+    // Now, update the order quantity based on the item details from billItems
+    for (var item in billItems) {
+      String itemName = item['itemName'];  // Get item name
+      int size = item['size'];          // Get item size
+      int quantity = item['quantity'];  // Get item quantity
+
+      // Print the item name for debugging
+      print("Processing Item: $itemName");
+
+      // Ensure processOrdersAndUpdateQuantity is awaited
+      await processOrdersAndUpdateQuantity(
+        context,
+        widget.customerId,  // Ensure this customer ID is correct
+        itemName,           // Use itemName from billItems
+        size,               // Use item size from billItems
+        quantity, // Convert quantity to string
+      );
+    }
+
+    // Optionally, do something after all items are processed, like updating the UI
+    print("All items processed.");
+    Future<Map<String, dynamic>> fetchUserData(String ownerId) async {
+      // Fetch the user data based on the ownerId
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(ownerId)
+          .get();
+      if (userDoc.exists) {
+        return userDoc.data() as Map<String, dynamic>;
+      } else {
+        return {}; // return an empty map if user not found
+      }
+    }
+    await fetchUserData(widget.customerId).then((userData) {
+      custMobile = userData['mobile'] ?? 'Not Available';
+      custName = userData['name'] ?? 'Not Available';
+      custAddr = userData['address'] ?? 'Not Available';
+      custShop = userData['shopName'] ?? 'Shop';
+    });
+
     DateTime now = DateTime.now();
     String formattedDate = DateFormat('yyyy-MM-dd').format(now);
-    String formattedTime = DateFormat('HH:mm:ss').format(now);
+    String formattedTime = DateFormat('hh:mm:ss a').format(now);
     String formattedDay = DateFormat('EEEE').format(now);
 
     // Create PDF document
@@ -194,25 +313,166 @@ class _CustomBillState extends State<CustomBill> {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
           // Header with Logo (optional)
-          pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-          pw.Text(
-          'Generated Bill',
-          style: pw.TextStyle(
-          fontSize: 24,
-          fontWeight: pw.FontWeight.bold,
-          color: PdfColor.fromInt(0xFF00796B), // Teal color
-          font: font,  // Use the custom font
-          ),
-          ),
-          ],
-          ),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+                      children: [
+                        // Shop name with stylish design
+                        pw.Container(
+                          margin: const pw.EdgeInsets.only(bottom: 5), // Add spacing below shop name
+                          child: pw.Text(
+                            '$custShop',
+                            style: pw.TextStyle(
+                              fontSize: 42, // Larger font for emphasis
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColor.fromHex('#008080'), // Teal color
+                              font: font,
+                            ),
+                          ),
+                        ),
+                        // Decorative line below shop name
+                        pw.Container(
+                          width: 150,
+                          height: 2,
+                          color: PdfColor.fromHex('#20B2AA'), // Lighter teal for subtle decoration
+                          margin: const pw.EdgeInsets.only(bottom: 10), // Spacing below the line
+                        ),
+                        // Date with additional styling
+                        pw.Text(
+                          'Date: ${DateTime.now().toString().split(' ')[0]}',
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.normal,
+                            color: PdfColor.fromHex('#004D40'), // Dark teal for contrast
+                            font: font,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
           pw.SizedBox(height: 20),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Container(
+                      padding: pw.EdgeInsets.all(10), // Add padding for a neat layout
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColor.fromHex('#008080'), width: 1), // Teal border
+                        borderRadius: pw.BorderRadius.circular(6), // Rounded corners
+                        color: PdfColor.fromHex('#F0F8F8'), // Light teal background for contrast
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          // Customer Name
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Owner Name: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: font,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Text(
+                                '$custName',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  font: font,
+                                  color: PdfColor.fromHex('#2e8b57'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 6),
 
-          // Customer Name
+                          // Customer Shop Name
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Shop Name: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: font,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Text(
+                                '$custShop',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  font: font,
+                                  color: PdfColor.fromHex('#2e8b57'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 6),
+
+                          // Customer Address with wrapping
+                          pw.Row(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'Address: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: font,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Expanded(
+                                child: pw.Text(
+                                  '$custAddr',
+                                  style: pw.TextStyle(
+                                    fontSize: 14,
+                                    font: font,
+                                    color: PdfColor.fromHex('#2e8b57'),
+                                  ),
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 6),
+
+                          // Customer Mobile Number
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Mobile Number: ',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  font: font,
+                                  color: PdfColor.fromHex('#008080'),
+                                ),
+                              ),
+                              pw.Text(
+                                '$custMobile',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  font: font,
+                                  color: PdfColor.fromHex('#2e8b57'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    pw.SizedBox(height: 10), // Additional spacing after the details box
+                  ],
+                ),
           pw.Text(
-          'Customer: $customerName',
+          'Billed To : $customerName',
           style: pw.TextStyle(
           fontSize: 18,
           fontWeight: pw.FontWeight.bold,
@@ -321,10 +581,20 @@ class _CustomBillState extends State<CustomBill> {
     );
 
     // Save PDF to device storage
-    final output = await getTemporaryDirectory();
-    final file = File("${output.path}/bill_$customerName.pdf");
-    await file.writeAsBytes(await pdf.save());
-
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final beplusDir = Directory('${appDocDir.path}/BEplus');
+    if (!await beplusDir.exists()) {
+      await beplusDir.create(recursive: true);
+    }
+    final filePath = "${beplusDir.path}/bill_$customerName.pdf";
+    final file = File(filePath);
+    if (await file.exists()) {
+      print("File already exists at: $filePath");
+    } else {
+      // Save the PDF content to the file.
+      await file.writeAsBytes(await pdf.save());
+      print("PDF saved successfully at: $filePath");
+    }
     // Display the dialog with a download and share button
     showDialog(
       context: context,
