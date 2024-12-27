@@ -142,7 +142,7 @@ class _ViewBillsScreenState extends State<ViewBillsScreen> {
                 children: [
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[400],
+                      backgroundColor: Colors.blue[400],
                       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),

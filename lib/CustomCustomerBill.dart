@@ -89,33 +89,63 @@ class _CustomBillState extends State<CustomBill> {
         if (!productSnapshot.exists) {
           continue; // Skip this iteration and check next order
         }
+
         String productName = productSnapshot['name'];
         if (productName == itemNameController) {
+          // Fetch the sizes and quantities for this product
           var selectedSize = Map<String, dynamic>.from(
               order['selectedSize']?.map((key, value) => MapEntry(key, value)) ?? {});
+
           String selectedSizeKey = sizeController.toString();
           if (selectedSize.containsKey(selectedSizeKey)) {
-            int currentQuantity = selectedSize[selectedSizeKey];
             int quantityToSubtract = quantityController;
-            if (currentQuantity >= quantityToSubtract) {
-              selectedSize[selectedSizeKey] = currentQuantity - quantityToSubtract;
+            bool quantityUpdated = false;
+
+            // Loop through available quantities for the selected size across multiple collections
+            for (var sizeKey in selectedSize.keys) {
+              if (sizeKey == selectedSizeKey) {
+                int currentQuantity = selectedSize[sizeKey];
+
+                // Subtract the available quantity and move to the next collection if necessary
+                while (quantityToSubtract > 0 && currentQuantity > 0) {
+                  // If the quantity to subtract is less than the available quantity, subtract it
+                  if (currentQuantity >= quantityToSubtract) {
+                    selectedSize[sizeKey] = currentQuantity - quantityToSubtract;
+                    quantityToSubtract = 0; // Successfully subtracted, exit loop
+                    quantityUpdated = true;
+                    break;
+                  } else {
+                    // Subtract all of this collection's quantity and move to the next collection
+                    selectedSize[sizeKey] = 0;
+                    quantityToSubtract -= currentQuantity;
+                    print('Moving to next collection. Remaining quantity to subtract: $quantityToSubtract');
+                  }
+                }
+              }
+              // If all required quantity has been subtracted, break the loop
+              if (quantityToSubtract == 0) break;
+            }
+
+            // After looping through sizes and sub-collections, if any quantity was updated, save to Firestore
+            if (quantityToSubtract == 0) {
               await FirebaseFirestore.instance.collection('orders').doc(order.id).update({
                 'selectedSize': selectedSize,
               });
+              print('Quantity successfully updated for product: $productName');
               return;
             } else {
-              print('Insufficient quantity for size $selectedSizeKey in $productName');
+              print('Insufficient quantity across all collections for size $selectedSizeKey in $productName');
             }
-          } else {
-            print('Size $selectedSizeKey not found in $productName');
           }
         }
       }
+
       print('No matching product found or quantity update unsuccessful.');
     } catch (e) {
       print('Error processing orders: $e');
     }
   }
+
 
 
   void updateTaxRate() {
@@ -601,73 +631,91 @@ class _CustomBillState extends State<CustomBill> {
       builder: (context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16), // Increased border radius for a smoother look
           ),
-          elevation: 5,
+          elevation: 12, // Elevated shadow for better depth
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0), // Increased padding for spacious design
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Title Section
                 Text(
                   'Generated Bill',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey,
+                    color: Colors.blueGrey[800],
                   ),
                 ),
-                SizedBox(height: 16),
+                SizedBox(height: 12),
+                Divider(thickness: 2, color: Colors.blueGrey.shade200),
+                SizedBox(height: 12),
+
+                // Customer Name
                 Text(
                   'Customer Name: $customerName',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.blueGrey.shade700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blueGrey[700],
                   ),
                 ),
-                Divider(),
-                SizedBox(height: 10),
-                // Displaying the bill items with better styling
-                ...billItems.map((item) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${item['itemName']}',
-                          style: TextStyle(fontSize: 16, color: Colors.black),
-                        ),
-                        Text(
-                          'Qty: ${item['quantity']} - \₹${item['price']} - \₹${item['itemTotal']}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.blueGrey.shade600,
+                SizedBox(height: 16),
+
+                // Bill Items List
+                Column(
+                  children: billItems.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Item Name
+                          Text(
+                            '${item['itemName']}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                Divider(),
-                SizedBox(height: 10),
+                          // Item Quantity, Price, and Total
+                          Text(
+                            'Qty: ${item['quantity']} - \₹${item['price']} - \₹${item['itemTotal']}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.blueGrey.shade600,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+                SizedBox(height: 16),
+                Divider(thickness: 2, color: Colors.blueGrey.shade200),
+
+                // Total Amount Section
+                SizedBox(height: 12),
                 Text(
                   'Total Amount: \₹$totalAmount',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: Colors.green[700],
                   ),
                 ),
-                SizedBox(height: 20),
-                // Download button
+                SizedBox(height: 24),
+
+                // Action Buttons
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Download Button
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0), // Vertical padding between buttons
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           // Open the generated PDF file
@@ -676,28 +724,28 @@ class _CustomBillState extends State<CustomBill> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal,
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        icon: Icon(Icons.download, color: Colors.white), // Icon for Download
+                        icon: Icon(Icons.download, color: Colors.white),
                         label: Text(
                           'Download Bill',
                           style: TextStyle(color: Colors.white, fontSize: 16),
                         ),
                       ),
                     ),
+
                     // Share Button
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0), // Vertical padding between buttons
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           // Share the generated PDF file using XFile
                           final result = await Share.shareXFiles(
                               [XFile(file.path)],
-                              text: 'Here is the generated bill for $customerName generated on $formattedDay, $formattedDate at $formattedTime.'
-                          );
+                              text: 'Here is the generated bill for $customerName generated on $formattedDay, $formattedDate at $formattedTime.');
 
                           // Check the status of the share operation
                           if (result.status == ShareResultStatus.success) {
@@ -711,12 +759,12 @@ class _CustomBillState extends State<CustomBill> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal,
-                          padding: EdgeInsets.symmetric(horizontal: 29, vertical: 14),
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        icon: Icon(Icons.share, color: Colors.white), // Icon for Share
+                        icon: Icon(Icons.share, color: Colors.white),
                         label: Text(
                           'Share Bill',
                           style: TextStyle(color: Colors.white, fontSize: 16),
@@ -725,12 +773,11 @@ class _CustomBillState extends State<CustomBill> {
                     ),
                   ],
                 ),
-
               ],
             ),
           ),
         );
-      },
+        },
     );
   }
 
