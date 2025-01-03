@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class RecognizeMeApp extends StatefulWidget {
   @override
@@ -31,9 +31,9 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
     }
   }
 
-  // Perform text recognition using ML Kit
+  // Perform text recognition using google_mlkit_text_recognition
   Future<String> _recognizeText(String imagePath) async {
-    final textRecognizer = GoogleMlKit.vision.textRecognizer();
+    final textRecognizer = TextRecognizer();
 
     try {
       final inputImage = InputImage.fromFilePath(imagePath);
@@ -44,6 +44,8 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
     } catch (e) {
       print("Error during text recognition: $e");
       return "Text recognition failed.";
+    } finally {
+      textRecognizer.close(); // Always close the text recognizer when done
     }
   }
 

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 class BillRecognition extends StatefulWidget {
@@ -297,13 +297,22 @@ class _BillRecognitionState extends State<BillRecognition> {
   }
 
   Future<void> getRecognizedText(XFile image) async {
+    // Create an InputImage object from the file path
     final inputImage = InputImage.fromFilePath(image.path);
-    final textDetector = GoogleMlKit.vision.textRecognizer();
+
+    // Create the Text Recognizer
+    final textDetector = TextRecognizer();
 
     try {
-      RecognizedText recognizedText = await textDetector.processImage(inputImage);
+      // Process the image and get recognized text
+      final RecognizedText recognizedText = await textDetector.processImage(inputImage);
+
+      // Close the text recognizer (clean up resources)
       await textDetector.close();
+
+      // Recognize text from the image and pass it to the other functions
       await recognizeText(image);
+
       // Save the entire recognized text for debugging
       final scannedText = recognizedText.text;
       print("Scanned Text: $scannedText");
@@ -317,12 +326,15 @@ class _BillRecognitionState extends State<BillRecognition> {
 
       // Extract table contents (items) from the text
       extractItemsFromText(scannedText);
+
     } catch (e) {
       print("Error during text recognition: $e");
     } finally {
+      // Make sure the text recognizer is closed in the finally block
       await textDetector.close();
     }
   }
+
 
   // Extract specific bill details from the text
   void extractBillDetails(String scannedText) {
