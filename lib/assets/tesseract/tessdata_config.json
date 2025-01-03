@@ -1,8 +1,0 @@
-{
-    "files": [
-        "/lib/assets/eng.traineddata",
-        "/lib/assets/ocrb.traineddata",
-        "/lib/assets/pdf.ttf",
-        "/lib/assets/financial.traineddata"
-    ]
-}

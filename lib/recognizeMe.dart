@@ -48,105 +48,188 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(primarySwatch: Colors.teal),
       home: Scaffold(
         appBar: AppBar(
-          title: Text("Handwritten Text Recognition"),
-          backgroundColor: Colors.blue,
-        ),
-        body: SingleChildScrollView( // Added this to allow scrolling if content overflows
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+          title: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min, // Ensures the Row takes only as much space as needed
               children: [
-                _image == null
-                    ? Text(
-                  "No image selected",
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                )
-                    : Card(
-                  elevation: 5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Image.file(
-                      _image!,
-                      height: 250,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    "Select from Gallery",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    "Take a Photo",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                ),
-                SizedBox(height: 20),
+                Icon(Icons.text_fields, color: Colors.white),
+                SizedBox(width: 10),
                 Text(
-                  "Recognized Text:",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Card( // Added a Card for recognized text
-                  elevation: 5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      _recognizedText,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
+                  "Text Recognition",
+                  style: TextStyle(color: Colors.white),
                 ),
               ],
             ),
           ),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.teal.shade600, Colors.teal.shade900],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          elevation: 5,
         ),
+        body: Container(
+          width: double.infinity,
+          color: Colors.white,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Image Display
+              _image == null
+                  ? GestureDetector(
+                onTap: () => _pickImage(ImageSource.gallery),
+                child: Container(
+                  height: 270,
+                  width: 270,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade400,
+                        blurRadius: 15,
+                        spreadRadius: 5,
+                        offset: Offset(6, 6),
+                      ),
+                    ],
+                    border: Border.all(color: Colors.teal, width: 2),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image, color: Colors.teal, size: 60),
+                        SizedBox(height: 15),
+                        Text(
+                          "Tap to Select an Image",
+                          style: TextStyle(
+                            color: Colors.teal,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+                  : Container(
+                height: 270,
+                width: 270,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.shade400,
+                      blurRadius: 15,
+                      spreadRadius: 5,
+                      offset: Offset(6, 6),
+                    ),
+                  ],
+                  border: Border.all(color: Colors.teal, width: 2),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    height: 270,
+                    width: 270,
+                    child: Image.file(
+                      _image!,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 40),
+              // Recognized Text Display
+              Text(
+                "Recognized Text",
+                style: TextStyle(
+                  fontSize: 24,
+                  color: Colors.teal.shade900,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              SizedBox(height: 15),
+              Card(
+                elevation: 8,
+                margin: EdgeInsets.symmetric(horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                shadowColor: Colors.teal.withOpacity(0.5),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    _recognizedText,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.teal.shade900,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 40),
+            ],
+          ),
+        ),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 20.0),
+          child: FloatingActionButton(
+            onPressed: () => _showImagePicker(context),
+            child: Icon(Icons.add),
+            backgroundColor: Colors.tealAccent.shade400,
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
+    );
+  }
+
+  void _showImagePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(Icons.photo, color: Colors.teal),
+                title: Text("Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: Colors.teal),
+                title: Text("Camera"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

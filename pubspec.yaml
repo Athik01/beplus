@@ -47,6 +47,7 @@ dependencies:
   flutter_tesseract_ocr: ^0.4.28
   material_design_icons_flutter: ^5.0.0
   horizontal_week_calendar: ^0.0.18
+  flutter_vision: ^1.1.4
 
   number_to_words: ^1.0.0
   open_file: ^3.5.10
@@ -61,6 +62,4 @@ dev_dependencies:
 flutter:
   assets:
     - lib/assets/fonts/Roboto-Black.ttf
-    - lib/assets/model.tflite
-    - lib/assets/model_converted.tflite
   uses-material-design: true
