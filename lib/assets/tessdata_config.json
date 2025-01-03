@@ -1,0 +1,8 @@
+{
+    "files": [
+        "/lib/assets/tesseract/eng.traineddata",
+        "/lib/assets/tesseract/ocrb.traineddata",
+        "/lib/assets/tesseract/pdf.ttf",
+        "/lib/assets/tesseract/financial.traineddata"
+    ]
+}

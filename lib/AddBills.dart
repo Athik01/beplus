@@ -1,6 +1,7 @@
 import 'package:beplus/ViewBillScreen.dart';
+import 'package:beplus/recognizeMe.dart';
 import 'package:flutter/material.dart';
-
+import 'RecognizationText.dart';
 import 'CustomCustomerBill.dart';
 
 class AddCustomerBills extends StatefulWidget {
@@ -26,8 +27,12 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '          Customer Bills',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          '           Customer Bills',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 20,
+          ),
         ),
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -47,74 +52,131 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
             Text(
               'Choose an option to proceed',
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
+                fontSize: 16,
+                color: Colors.grey.shade700,
                 fontStyle: FontStyle.italic,
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CustomBill(customerId: widget.customerId),
-                  ),
-                );
-              },
-              icon: Icon(
-                Icons.edit,
-                color: Colors.white,
+            SizedBox(height: 20),
+            Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              label: Text(
-                '   Add Manually     ',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CustomBill(customerId: widget.customerId),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.edit, color: Colors.white),
+                      label: Text(
+                        'Add Manually',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 10,
+                        shadowColor: Colors.teal.shade300,
+                        backgroundColor: Colors.teal.shade700,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BillRecognition(),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.camera_alt, color: Colors.white),
+                      label: Text(
+                        'Scan Document',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 10,
+                        shadowColor: Colors.teal.shade300,
+                        backgroundColor: Colors.teal.shade900,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RecognizeMeApp(),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      label: Column(
+                        children: [
+                          Text(
+                            'Scan the',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            'Handwritten Documents',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 30, vertical: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        elevation: 10,
+                        backgroundColor: Colors.teal.shade800,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 8,
-                backgroundColor: Colors.teal.shade700,
-                shadowColor: Colors.teal.shade200,
-                surfaceTintColor: Colors.tealAccent,
               ),
             ),
-            SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: () {
-                print("Scan the Document button pressed");
-              },
-              icon: Icon(
-                Icons.camera_alt,
-                color: Colors.white,
-              ),
-              label: Text(
-                'Scan the Document',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 8,
-                backgroundColor: Colors.teal.shade900,
-                shadowColor: Colors.teal.shade300,
-                surfaceTintColor: Colors.tealAccent,
-              ),
-            ),
-            SizedBox(height: 40),
           ],
         )
             : ViewBillsScreen(),
@@ -129,7 +191,7 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.transparent,
-          elevation: 0, // Remove shadow
+          elevation: 0,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.add),
