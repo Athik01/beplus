@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'ocr_service.dart';
 
 class RecognizeMeApp extends StatefulWidget {
   @override
-  _RecognizeHandwrittenTextState createState() =>
-      _RecognizeHandwrittenTextState();
+  _RecognizeHandwrittenTextState createState() => _RecognizeHandwrittenTextState();
 }
 
 class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
   File? _image;
-  String _recognizedText = "No text recognized yet";
+  String _recognizedText = "No text recognized yet!";
+  final OcrService _ocrService = OcrService();
 
   // Pick an image from the gallery or camera
   Future<void> _pickImage(ImageSource source) async {
@@ -31,23 +31,26 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
     }
   }
 
-  // Perform text recognition using google_mlkit_text_recognition
+  // Perform text recognition using OCR Space API
   Future<String> _recognizeText(String imagePath) async {
-    final textRecognizer = TextRecognizer();
-
     try {
-      final inputImage = InputImage.fromFilePath(imagePath);
-      final recognizedText = await textRecognizer.processImage(inputImage);
+      // Initialize the OCR service
+      final ocrService = OcrService();
 
-      String text = recognizedText.text;
-      return text.isNotEmpty ? text : "No text found";
+      // Perform text recognition using the image path
+      final text = await ocrService.recognizeHandwrittenText(File(imagePath));
+
+      // Return the recognized text or a default message if empty
+      return text.isNotEmpty ? text : "No handwritten text found.";
     } catch (e) {
+      // Log the error for debugging purposes
       print("Error during text recognition: $e");
+
+      // Return an error message
       return "Text recognition failed.";
-    } finally {
-      textRecognizer.close(); // Always close the text recognizer when done
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +60,7 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
         appBar: AppBar(
           title: Center(
             child: Row(
-              mainAxisSize: MainAxisSize.min, // Ensures the Row takes only as much space as needed
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.text_fields, color: Colors.white),
                 SizedBox(width: 10),
@@ -79,21 +82,56 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
           ),
           elevation: 5,
         ),
-        body: Container(
-          width: double.infinity,
-          color: Colors.white,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Image Display
-              _image == null
-                  ? GestureDetector(
-                onTap: () => _pickImage(ImageSource.gallery),
-                child: Container(
+        body: SingleChildScrollView( // Wrap the entire body with SingleChildScrollView
+          child: Container(
+            width: double.infinity,
+            color: Colors.white,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Image Display
+                _image == null
+                    ? GestureDetector(
+                  onTap: () => _pickImage(ImageSource.gallery),
+                  child: Container(
+                    height: 270,
+                    width: 270,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade400,
+                          blurRadius: 15,
+                          spreadRadius: 5,
+                          offset: Offset(6, 6),
+                        ),
+                      ],
+                      border: Border.all(color: Colors.teal, width: 2),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.image, color: Colors.teal, size: 60),
+                          SizedBox(height: 15),
+                          Text(
+                            "Tap to Select an Image",
+                            style: TextStyle(
+                              color: Colors.teal,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                    : Container(
                   height: 270,
                   width: 270,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -105,87 +143,57 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
                     ],
                     border: Border.all(color: Colors.teal, width: 2),
                   ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.image, color: Colors.teal, size: 60),
-                        SizedBox(height: 15),
-                        Text(
-                          "Tap to Select an Image",
-                          style: TextStyle(
-                            color: Colors.teal,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                      height: 270,
+                      width: 270,
+                      child: Image.file(
+                        _image!,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 40),
+                // Recognized Text Display
+                Text(
+                  "Recognized Text",
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: Colors.teal.shade900,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                SizedBox(height: 15),
+                Card(
+                  elevation: 8,
+                  margin: EdgeInsets.symmetric(horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  shadowColor: Colors.teal.withOpacity(0.5),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: SingleChildScrollView( // Added scrollable functionality
+                      child: Text(
+                        _recognizedText,
+                        textAlign: TextAlign.start, // Aligned text to the left for better readability
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.teal.shade900,
+                          height: 1.5, // Added line height for better text spacing
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              )
-                  : Container(
-                height: 270,
-                width: 270,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade400,
-                      blurRadius: 15,
-                      spreadRadius: 5,
-                      offset: Offset(6, 6),
-                    ),
-                  ],
-                  border: Border.all(color: Colors.teal, width: 2),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                    height: 270,
-                    width: 270,
-                    child: Image.file(
-                      _image!,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 40),
-              // Recognized Text Display
-              Text(
-                "Recognized Text",
-                style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.teal.shade900,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              SizedBox(height: 15),
-              Card(
-                elevation: 8,
-                margin: EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                shadowColor: Colors.teal.withOpacity(0.5),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Text(
-                    _recognizedText,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.teal.shade900,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 40),
-            ],
+                SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
         floatingActionButton: Padding(
@@ -218,14 +226,6 @@ class _RecognizeHandwrittenTextState extends State<RecognizeMeApp> {
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.camera_alt, color: Colors.teal),
-                title: Text("Camera"),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
                 },
               ),
             ],

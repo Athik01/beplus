@@ -1,7 +1,6 @@
 import 'package:beplus/ViewBillScreen.dart';
 import 'package:beplus/recognizeMe.dart';
 import 'package:flutter/material.dart';
-import 'RecognizationText.dart';
 import 'CustomCustomerBill.dart';
 
 class AddCustomerBills extends StatefulWidget {
@@ -104,7 +103,7 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => BillRecognition(),
+                            builder: (context) => RecognizeMeApp(),
                           ),
                         );
                       },
@@ -129,50 +128,6 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
                       ),
                     ),
                     SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RecognizeMeApp(),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      label: Column(
-                        children: [
-                          Text(
-                            'Scan the',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            'Handwritten Documents',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 30, vertical: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        elevation: 10,
-                        backgroundColor: Colors.teal.shade800,
-                      ),
-                    ),
                   ],
                 ),
               ),
