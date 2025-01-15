@@ -35,7 +35,7 @@ class _ManageStatementsState extends State<ManageStatements> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Manage Statements'),
+        title: Text('Manage Statements',style: TextStyle(color: Colors.white),),
         centerTitle: true,
         backgroundColor: Colors.deepPurple,
       ),
@@ -43,7 +43,17 @@ class _ManageStatementsState extends State<ManageStatements> {
         future: _statements,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            // Display a "Working..." message while loading
+            return Center(
+              child: Text(
+                'Working on it...',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -85,7 +95,6 @@ class _ManageStatementsState extends State<ManageStatements> {
                       _buildStatRow('Balance', statements[index].balance),
                       _buildStatRow('Credit', statements[index].credit),
                       _buildStatRow('Debit', statements[index].debit),
-                      SizedBox(height: 10),
                       SizedBox(height: 10),
                       _buildStatRow(
                         'Created At',

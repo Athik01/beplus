@@ -338,34 +338,21 @@ class HomeScreen extends StatelessWidget {
 class PartiesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // Fetch the currently logged-in user's ID
     String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return FutureBuilder(
       future: _fetchRequests(currentUserId),
       builder: (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
+          return _buildShimmerLoading();
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Text(
-              'No Business Contact',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-          );
+          return _buildNoDataScreen();
         }
 
-        // Display Cards for each request that matches the criteria
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           itemCount: snapshot.data!.length,
           itemBuilder: (context, index) {
             var request = snapshot.data![index];
@@ -376,11 +363,11 @@ class PartiesScreen extends StatelessWidget {
                   .get(),
               builder: (context, userSnapshot) {
                 if (userSnapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return _buildShimmerLoading();
                 }
 
                 if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                  return Center(child: Text('Customer not found.'));
+                  return _buildErrorScreen();
                 }
 
                 var user = userSnapshot.data!;
@@ -389,85 +376,8 @@ class PartiesScreen extends StatelessWidget {
                 String name = user['name'] ?? 'Unknown';
                 String contactNumber = user['mobile'] ?? 'N/A';
 
-                return Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.teal, Color(0xffF5F5F5)], // Gradient from dark to light
-                      begin: Alignment.bottomRight,
-                      end: Alignment.topLeft,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: GestureDetector(
-                    onTap: () {
-                      // Navigate to ProductVisibility with the customerID
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductVisibility(customerID: customerID),
-                        ),
-                      );
-                    },
-                    child: Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      shadowColor: Colors.black.withOpacity(0.3),
-                      color: Colors.transparent,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            // Display customer's image with a border and shadow for emphasis
-                            photoURL.isNotEmpty
-                                ? CircleAvatar(
-                              radius: 45,
-                              backgroundImage: NetworkImage(photoURL),
-                              backgroundColor: Colors.white,
-                            )
-                                : CircleAvatar(
-                              radius: 45,
-                              child: Icon(Icons.person, size: 50, color: Colors.black),
-                              backgroundColor: Colors.white,
-                            ),
-                            const SizedBox(width: 10), // Spacing for readability
-                            // Display customer details
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white, // White for better contrast
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Contact: $contactNumber',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white, // White text color
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                return _buildCustomerCard(
+                    context, customerID, photoURL, name, contactNumber
                 );
               },
             );
@@ -477,8 +387,142 @@ class PartiesScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildShimmerLoading() {
+    return Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+
+  Widget _buildNoDataScreen() {
+    return Center(
+      child: Text(
+        'No Business Contact',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.redAccent,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorScreen() {
+    return Center(
+      child: Text(
+        'Customer not found.',
+        style: TextStyle(
+          fontSize: 18,
+          color: Colors.grey,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerCard(BuildContext context, String customerID, String photoURL, String name, String contactNumber) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductVisibility(customerID: customerID),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        color: Colors.transparent,
+        shadowColor: Colors.black.withOpacity(0.3),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade200, Colors.teal.shade800], // Modern gradient
+              begin: Alignment.bottomRight,
+              end: Alignment.topLeft,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 10,
+                offset: Offset(5, 5),
+                color: Colors.black.withOpacity(0.2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Display customer's image or placeholder
+                _buildCustomerImage(photoURL),
+                const SizedBox(width: 16),
+                // Display customer details
+                _buildCustomerDetails(name, contactNumber),
+                const SizedBox(width: 16),
+                // Forward arrow icon
+                _buildArrowIcon(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerImage(String photoURL) {
+    return CircleAvatar(
+      radius: 45,
+      backgroundImage: photoURL.isNotEmpty
+          ? NetworkImage(photoURL)
+          : AssetImage('assets/default_avatar.png') as ImageProvider,
+      backgroundColor: Colors.white,
+    );
+  }
+
+  Widget _buildCustomerDetails(String name, String contactNumber) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.phone, color: Colors.white, size: 20),
+              const SizedBox(width: 4),
+              Text(
+                contactNumber,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArrowIcon() {
+    return Icon(
+      Icons.arrow_forward_ios,
+      color: Colors.white,
+      size: 24,
+    );
+  }
+
   Future<List<Map<String, dynamic>>> _fetchRequests(String userId) async {
-    // Fetch requests collection where the ownerId matches and status is "Confirmed"
     QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection('requests')
         .where('ownerId', isEqualTo: userId)
@@ -496,6 +540,7 @@ class PartiesScreen extends StatelessWidget {
     return requests;
   }
 }
+
 
 
 
