@@ -371,13 +371,17 @@ class PartiesScreen extends StatelessWidget {
                 }
 
                 var user = userSnapshot.data!;
-                String customerID = userSnapshot.data!.id;
+                String customerID = user.id;
                 String photoURL = user['photoURL'] ?? '';
                 String name = user['name'] ?? 'Unknown';
                 String contactNumber = user['mobile'] ?? 'N/A';
 
                 return _buildCustomerCard(
-                    context, customerID, photoURL, name, contactNumber
+                  context,
+                  customerID,
+                  photoURL,
+                  name,
+                  contactNumber,
                 );
               },
             );
@@ -418,7 +422,13 @@ class PartiesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCustomerCard(BuildContext context, String customerID, String photoURL, String name, String contactNumber) {
+  Widget _buildCustomerCard(
+      BuildContext context,
+      String customerID,
+      String photoURL,
+      String name,
+      String contactNumber,
+      ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -438,7 +448,7 @@ class PartiesScreen extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal.shade200, Colors.teal.shade800], // Modern gradient
+              colors: [Colors.teal.shade200, Colors.teal.shade800],
               begin: Alignment.bottomRight,
               end: Alignment.topLeft,
             ),
@@ -455,13 +465,10 @@ class PartiesScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Display customer's image or placeholder
                 _buildCustomerImage(photoURL),
                 const SizedBox(width: 16),
-                // Display customer details
                 _buildCustomerDetails(name, contactNumber),
                 const SizedBox(width: 16),
-                // Forward arrow icon
                 _buildArrowIcon(),
               ],
             ),

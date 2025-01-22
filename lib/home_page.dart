@@ -160,7 +160,15 @@ class _HomePage1State extends State<HomePage1> {
         } else if (!snapshot.hasData || (snapshot.data as List).isEmpty) {
           return Center(child: Text('No products found.'));
         } else {
-          List products = snapshot.data as List;
+          // Filter the products based on visibility
+          List products = (snapshot.data as List).where((product) {
+            List<dynamic> visibility = product['visibility'] ?? [];
+            return visibility.contains(userId); // Only include visible products
+          }).toList();
+
+          if (products.isEmpty) {
+            return Center(child: Text('No visible products.'));
+          }
 
           return Scaffold(
             body: GridView.builder(
@@ -175,11 +183,7 @@ class _HomePage1State extends State<HomePage1> {
               itemBuilder: (context, index) {
                 var product = products[index];
                 final productId = product['id'];
-                List<dynamic> visibility = product['visibility'] ?? [];
-                bool isVisible = visibility.contains(userId); // Check for visibility
-                if (!isVisible) {
-                  return SizedBox.shrink();
-                }
+
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -257,6 +261,7 @@ class _HomePage1State extends State<HomePage1> {
       },
     );
   }
+
 
 
   Future<List> _fetchProducts() async {
@@ -533,16 +538,78 @@ class _HomePage1State extends State<HomePage1> {
             ),
           );
         }
-
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
         final orders = snapshot.data!.docs
             .where((order) => order['userId'] == currentUserId)
             .toList();
-
+        final int count = orders.length;
+        int test = 0;
         if (orders.isEmpty) {
           return const Center(child: Text('No matching orders found.'));
         }
-        return ListView.builder(
+        int doneCount = 0;
+        orders.forEach((order) {
+          if (order['status'] == "done") {
+            doneCount++;
+          }
+        });
+        return doneCount == orders.length
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.hourglass_empty_rounded,
+                size: 100,
+                color: Colors.tealAccent,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'No Orders in the Queue!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal.shade700,
+                ),
+              ),
+              SizedBox(height: 15),
+              Text(
+                'You haven’t placed any orders yet.\nStart shopping and place new orders 😉!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.teal.shade500,
+                ),
+              ),
+              SizedBox(height: 25),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MyPurchases()),
+                  );
+                },
+                icon: Icon(
+                  Icons.shopping_cart,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  'My Purchases!',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ) : // Add other UI for non-empty orders here
+        ListView.builder(
           itemCount: orders.length,
           itemBuilder: (context, index) {
             final order = orders[index];
@@ -552,7 +619,6 @@ class _HomePage1State extends State<HomePage1> {
             final amount = order['totalAmount'];
             final orderDate = order['orderDate'];
             final selectedSize = order['selectedSize'];
-
             return StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance.collection('products').doc(productId).snapshots(),
               builder: (context, productSnapshot) {
@@ -574,277 +640,248 @@ class _HomePage1State extends State<HomePage1> {
                 // Decode the base64 image string
                 final imageBytes = base64.decode(base64Image);
                 final image = Image.memory(imageBytes);
-
                 return GestureDetector(
                   onTap: () {
                     // Show the dialog when the card is clicked
                     showDialog(
                       context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-                            decoration: BoxDecoration(
-                              color: Colors.teal.shade100, // Light background color for emphasis
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between the title and close icon
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: Colors.teal,
-                                      size: 24.0,
-                                    ),
-                                    const SizedBox(width: 8.0),
-                                    Text(
-                                      'Product Details',
-                                      style: TextStyle(
-                                        fontSize: 20, // Larger font size for emphasis
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.teal.shade800, // Darker text color for contrast
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                              decoration: BoxDecoration(
+                                color: Colors.teal.shade100, // Light background color for emphasis
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between the title and close icon
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.teal,
+                                        size: 24.0,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.close,
-                                    color: Colors.red, // Red color for close icon
-                                    size: 24.0, // Adjust size as needed
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop(); // Close the dialog when clicked
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Product Image with rounded border for a more polished look
-                                ClipOval(
-                                  child: SizedBox(
-                                    height: 100, // Adjust the image height
-                                    width: 100, // Adjust the image width for a smaller size
-                                    child: image,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                // Product Name with increased emphasis
-                                Text(
-                                  'Product Name: $productName',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.teal.shade800, // Darker color for emphasis
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Status: $status',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600], // Slightly darker grey for better readability
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Amount: ₹${amount.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.teal,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Order Date: ${DateFormat('yMMMd').format(orderDate.toDate())}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600], // Similar color as status for consistency
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Selected Sizes:',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.teal.shade800, // Matches the product name for visual cohesion
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8.0, // Space between chips
-                                  runSpacing: 4.0, // Space between lines of chips
-                                  children: selectedSize.entries.map<Widget>((entry) {
-                                    return Chip(
-                                      label: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                        child: Text(
-                                          'Size: ${entry.key} - Quantity ${entry.value}',
-                                          style: TextStyle(color: Colors.white, fontSize: 14),
+                                      const SizedBox(width: 8.0),
+                                      Text(
+                                        'Product Details',
+                                        style: TextStyle(
+                                          fontSize: 20, // Larger font size for emphasis
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.teal.shade800, // Darker text color for contrast
                                         ),
                                       ),
-                                      backgroundColor: Colors.teal.shade700, // Slightly darker teal for better contrast
-                                      elevation: 2, // Adds subtle shadow for depth
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8.0), // Rounded corners for a modern look
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                                const SizedBox(height: 16),
-                                // Conditional cancel button display based on status
+                                    ],
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.close,
+                                      color: Colors.red, // Red color for close icon
+                                      size: 24.0, // Adjust size as needed
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(context).pop(); // Close the dialog when clicked
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Product Image with rounded border for a more polished look
+                                  ClipOval(
+                                    child: SizedBox(
+                                      height: 100, // Adjust the image height
+                                      width: 100, // Adjust the image width for a smaller size
+                                      child: image,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Product Name with increased emphasis
+                                  Text(
+                                    'Product Name: $productName',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.teal.shade800, // Darker color for emphasis
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Status: $status',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600], // Slightly darker grey for better readability
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Amount: ₹${amount.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.teal,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Order Date: ${DateFormat('yMMMd').format(orderDate.toDate())}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600], // Similar color as status for consistency
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Selected Sizes:',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.teal.shade800, // Matches the product name for visual cohesion
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8.0, // Space between chips
+                                    runSpacing: 4.0, // Space between lines of chips
+                                    children: selectedSize.entries.map<Widget>((entry) {
+                                      return Chip(
+                                        label: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                          child: Text(
+                                            'Size: ${entry.key} - Quantity ${entry.value}',
+                                            style: TextStyle(color: Colors.white, fontSize: 14),
+                                          ),
+                                        ),
+                                        backgroundColor: Colors.teal.shade700, // Slightly darker teal for better contrast
+                                        elevation: 2, // Adds subtle shadow for depth
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8.0), // Rounded corners for a modern look
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(height: 16),
 
-                                if (status == 'Not Confirmed' || status != 'Confirmed' || status != 'done') // Adjust the condition as needed
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20.0), // Padding around the button
-                                      child: SizedBox(
-                                        width: double.infinity, // Make the button span the full width
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            try {
-                                              // Replace 'orderId' with the actual variable holding the order ID
-                                              await FirebaseFirestore.instance
-                                                  .collection('orders')
-                                                  .doc(orderId)
-                                                  .delete();
+                                  // Cancel Order Button if not done or confirmed
+                                  if (status == 'Not Confirmed' && status != 'Confirmed' || status != 'done')
+                                    Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(20.0), // Padding around the button
+                                        child: SizedBox(
+                                          width: double.infinity, // Make the button span the full width
+                                          child: ElevatedButton(
+                                            onPressed: () async {
+                                              try {
+                                                // Replace 'orderId' with the actual variable holding the order ID
+                                                await FirebaseFirestore.instance
+                                                    .collection('orders')
+                                                    .doc(orderId)
+                                                    .delete();
 
-                                              // Show a success message
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  backgroundColor: Colors.teal, // Success color
-                                                  content: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.check_circle, // Success icon
-                                                        color: Colors.white,
-                                                      ),
-                                                      SizedBox(width: 8), // Spacing between icon and text
-                                                      Expanded(
-                                                        child: Text(
-                                                          'Order Cancelled',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 15,
+                                                // Show a success message
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    backgroundColor: Colors.teal, // Success color
+                                                    content: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.check_circle, // Success icon
+                                                          color: Colors.white,
+                                                        ),
+                                                        SizedBox(width: 8), // Spacing between icon and text
+                                                        Expanded(
+                                                          child: Text(
+                                                            'Order Cancelled',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 15,
+                                                            ),
                                                           ),
                                                         ),
-                                                      ),
-                                                    ],
+                                                      ],
+                                                    ),
+                                                    duration: Duration(seconds: 3), // Display duration
+                                                    behavior: SnackBarBehavior.floating, // Floating snackbar
                                                   ),
-                                                  duration: Duration(seconds: 3), // Display duration
-                                                  behavior: SnackBarBehavior.floating, // Floating snackbar
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } catch (e) {
-                                              // Show an error message if something goes wrong
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  backgroundColor: Colors.red, // Error color
-                                                  content: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.error, // Error icon
-                                                        color: Colors.white,
-                                                      ),
-                                                      SizedBox(width: 8), // Spacing between icon and text
-                                                      Expanded(
-                                                        child: Text(
-                                                          'Error deleting order: $e',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 16,
+                                                );
+                                                Navigator.of(context).pop();
+                                              } catch (e) {
+                                                // Show an error message if something goes wrong
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    backgroundColor: Colors.red, // Error color
+                                                    content: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.error, // Error icon
+                                                          color: Colors.white,
+                                                        ),
+                                                        SizedBox(width: 8), // Spacing between icon and text
+                                                        Expanded(
+                                                          child: Text(
+                                                            'Error deleting order: $e',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 16,
+                                                            ),
                                                           ),
                                                         ),
-                                                      ),
-                                                    ],
+                                                      ],
+                                                    ),
+                                                    duration: Duration(seconds: 3), // Display duration
+                                                    behavior: SnackBarBehavior.floating, // Floating snackbar
                                                   ),
-                                                  duration: Duration(seconds: 3), // Display duration
-                                                  behavior: SnackBarBehavior.floating, // Floating snackbar
+                                                );
+                                              }
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red, // Button color
+                                              padding: EdgeInsets.symmetric(vertical: 15.0), // Padding inside the button
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12.0), // Rounded corners
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center, // Center content
+                                              children: [
+                                                Icon(
+                                                  Icons.delete_rounded, // Icon for the button
+                                                  color: Colors.white, // Icon color
+                                                  size: 20, // Icon size
                                                 ),
-                                              );
-                                            }
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red, // Button color
-                                            padding: EdgeInsets.symmetric(vertical: 15.0), // Padding inside the button
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12.0), // Rounded corners
+                                                SizedBox(width: 8), // Spacing between icon and text
+                                                Text(
+                                                  'Cancel Order',
+                                                  style: TextStyle(
+                                                    fontSize: 15, // Text size
+                                                    fontWeight: FontWeight.bold, // Bold text
+                                                    color: Colors.white, // Text color
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center, // Center content
-                                            children: [
-                                              Icon(
-                                                Icons.delete_rounded, // Icon for the button
-                                                color: Colors.white, // Icon color
-                                                size: 20, // Icon size
-                                              ),
-                                              SizedBox(width: 8), // Spacing between icon and text
-                                              Text(
-                                                'Cancel Order',
-                                                style: TextStyle(
-                                                  fontSize: 15, // Text size
-                                                  fontWeight: FontWeight.bold, // Bold text
-                                                  color: Colors.white, // Text color
-                                                ),
-                                              ),
-                                            ],
-                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                if (status == 'Confirmed' || status != 'Not Confirmed')
-                                  Center(
-                                    child: Chip(
-                                      backgroundColor: Colors.teal[50], // Light teal background
-                                      avatar: CircleAvatar(
-                                        backgroundColor: Colors.green, // Checked circle color
-                                        child: Icon(
-                                          Icons.check_circle, // Checked icon
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      label: Text(
-                                        'Order Placed!',
-                                        style: TextStyle(
-                                          color: Colors.teal, // White text
-                                          fontWeight: FontWeight.bold,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16), // Optional: round corners
-                                        side: BorderSide(
-                                          color: Colors.teal.shade800, // Dark border color
-                                          width: 1,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        }
                     );
                   },
                   child: Visibility(
@@ -1094,7 +1131,6 @@ class _HomePage1State extends State<HomePage1> {
     );
   }
 
-
   Widget _buildBody() {
     return Stack(
       children: [
@@ -1151,7 +1187,9 @@ class _HomePage1State extends State<HomePage1> {
                     ),
                   ),
                 ),
+              StockAlert(userId),
               _buildCategoryCards(),
+              _buildFavoriteProducts(),
             ],
           ),
         ),
@@ -1202,6 +1240,331 @@ class _HomePage1State extends State<HomePage1> {
     );
   }
 
+  Widget StockAlert(String userId) {
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance.collection('orders').get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text('No orders found!'));
+        }
+
+        final orders = snapshot.data!.docs;
+        Map<String, Map<int, int>> consolidatedOrders = {}; // Map to hold consolidated data
+
+        // Consolidate orders based on productId and selectedSize
+        for (var order in orders) {
+          var productId = order['productId'];
+          var selectedSize = Map<int, int>.from(
+            order['selectedSize']?.map((key, value) => MapEntry(int.parse(key), value)) ?? {},
+          );
+          if (!consolidatedOrders.containsKey(productId)) {
+            consolidatedOrders[productId] = selectedSize;
+          } else {
+            selectedSize.forEach((size, quantity) {
+              if (consolidatedOrders[productId]!.containsKey(size)) {
+                consolidatedOrders[productId]![size] =
+                    consolidatedOrders[productId]![size]! + quantity;
+              } else {
+                consolidatedOrders[productId]![size] = quantity;
+              }
+            });
+          }
+        }
+        List<Map<String, dynamic>> lowStockProducts = [];
+        consolidatedOrders.forEach((productId, sizeQuantities) {
+          sizeQuantities.forEach((size, quantity) {
+            if (quantity <= 0) {
+              lowStockProducts.add({'productId': productId, 'size': size, 'quantity': quantity});
+            }
+          });
+        });
+
+        if (lowStockProducts.isNotEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Text(
+                  'Low Stock Alert 🚨',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 4,
+                        color: Colors.black.withOpacity(0.3),
+                        offset: Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height - 150,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  itemCount: lowStockProducts.length,
+                  itemBuilder: (context, index) {
+                    var lowStockProduct = lowStockProducts[index];
+                    var productId = lowStockProduct['productId'];
+                    var size = lowStockProduct['size'];
+                    var quantity = lowStockProduct['quantity'];
+
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance.collection('products').doc(productId).get(),
+                      builder: (context, productSnapshot) {
+                        if (productSnapshot.connectionState == ConnectionState.waiting) {
+                          return Card(
+                            color: Colors.teal[100],
+                            margin: EdgeInsets.all(10),
+                            child: ListTile(
+                              title: Text('Loading product details...'),
+                            ),
+                          );
+                        }
+
+                        if (!productSnapshot.hasData) {
+                          return Card(
+                            color: Colors.teal[100],
+                            margin: EdgeInsets.all(10),
+                            child: ListTile(
+                              title: Text('Product not found'),
+                            ),
+                          );
+                        }
+
+                        var product = productSnapshot.data!;
+                        var productName = product['name'];
+                        var imageBase64 = product['imageUrl'] ?? '';  // Get the base64 string for the image
+
+                        Uint8List? imageBytes;
+                        if (imageBase64.isNotEmpty) {
+                          try {
+                            imageBytes = base64Decode(imageBase64);  // Decode the base64 string
+                          } catch (_) {
+                            imageBytes = null;
+                          }
+                        }
+
+                        return Card(
+                          color: Colors.red[100],
+                          margin: EdgeInsets.all(10),
+                          child: ListTile(
+                            subtitle: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Product Name: $productName', style: TextStyle(color: Colors.red)),
+                                      Text('Size: $size', style: TextStyle(color: Colors.red)),
+                                      Text('Quantity: $quantity', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                                if (imageBytes != null)  // Check if the imageBytes are available
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8.0),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.memory(
+                                        imageBytes,
+                                        width: 60,  // Set width for the image
+                                        height: 60,  // Set height for the image
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+        return Container(); // Return empty container if no low stock alert
+      },
+    );
+  }
+
+  Widget _buildFavoriteProducts() {
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance.collection('products').get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text('No products available'));
+        }
+
+        final likedProducts = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>? ?? {};
+          final likes = data['likes'] as Map<String, dynamic>? ?? {};
+          final visibility = data['visibility'] as List<dynamic>? ?? [];
+
+          final isLiked = likes[userId] == true;
+          final isVisible = visibility.contains(userId);
+
+          return isLiked && isVisible;
+        }).toList();
+
+        // If likedProducts is empty, return an empty widget
+        if (likedProducts.isEmpty) {
+          return Container();  // Just return an empty container, doing nothing
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                'My Wishlist! ❤️',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 4,
+                      color: Colors.black.withOpacity(0.3),
+                      offset: Offset(2, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height - 150,
+              ),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16.0,
+                  mainAxisSpacing: 16.0,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: likedProducts.length,
+                itemBuilder: (context, index) {
+                  final product = likedProducts[index].data() as Map<String, dynamic>? ?? {};
+                  final productName = product['name'] ?? 'Unnamed';
+                  final imageBase64 = product['imageUrl'] ?? '';
+
+                  Uint8List? imageBytes;
+                  if (imageBase64.isNotEmpty) {
+                    try {
+                      imageBytes = base64Decode(imageBase64);
+                    } catch (_) {
+                      imageBytes = null;
+                    }
+                  }
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrderPage(productId: likedProducts[index].id),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 10,
+                      shadowColor: Colors.teal.withOpacity(0.3),
+                      color: Colors.white,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              child: imageBytes != null
+                                  ? Image.memory(
+                                imageBytes,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                                  : Container(
+                                color: Colors.grey.shade300,
+                                child: Icon(
+                                  Icons.image,
+                                  size: 48,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(9)),
+                              gradient: LinearGradient(
+                                colors: [Colors.white54, Colors.teal.shade300],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                            child: Text(
+                              productName,
+                              style: TextStyle(
+                                color: Colors.teal.shade900,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   Widget _buildCategoryCards() {
     return FutureBuilder<QuerySnapshot>(
       future: _categoriesCollection.get(),
@@ -1224,7 +1587,7 @@ class _HomePage1State extends State<HomePage1> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Text(
-                'New Hot Selling Products🔥',
+                'New Hot Selling Products! 🔥',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 24,
@@ -1242,7 +1605,7 @@ class _HomePage1State extends State<HomePage1> {
             ),
             Container(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height - 150, // Adjust height
+                maxHeight: MediaQuery.of(context).size.height - 150,
               ),
               child: GridView.builder(
                 shrinkWrap: true,
@@ -1268,7 +1631,6 @@ class _HomePage1State extends State<HomePage1> {
                       imageBytes = null;
                     }
                   }
-
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
