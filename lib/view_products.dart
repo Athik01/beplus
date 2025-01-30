@@ -41,7 +41,7 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
             border: InputBorder.none,
           ),
         )
-            :  Text(
+            : Text(
           '        View Products',
           style: TextStyle(
             fontSize: 22,
@@ -53,10 +53,10 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
         actions: [
           IconButton(
             icon: Icon(
-                  isSearching ? Icons.close : Icons.search,
-                  color: Colors.white,
+              isSearching ? Icons.close : Icons.search,
+              color: Colors.white,
             ),
-        onPressed: () {
+            onPressed: () {
               setState(() {
                 if (isSearching) {
                   searchQuery = ""; // Clear search query
@@ -119,6 +119,61 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
                   .toLowerCase()
                   .contains(searchQuery)) // Apply search filter
               .toList();
+
+          // Check if all products are hidden
+          bool noVisibleProducts = true;
+          for (var product in products) {
+            final String currentUserID =
+                FirebaseAuth.instance.currentUser!.uid;
+            List<dynamic> visibility = product['visibility'] ?? [];
+            bool isVisible = visibility.contains(currentUserID);
+            if (isVisible) {
+              noVisibleProducts = false;
+              break;
+            }
+          }
+
+          if (noVisibleProducts) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // More engaging icon
+                  AnimatedContainer(
+                    duration: Duration(seconds: 1),
+                    curve: Curves.easeInOut,
+                    child: Icon(
+                      Icons.cloud_download, // Use a downloading icon
+                      color: Colors.teal.shade800,
+                      size: 80,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  AnimatedOpacity(
+                    opacity: noVisibleProducts ? 1.0 : 0.0,
+                    duration: Duration(seconds: 1),
+                    child: Text(
+                      'Products are on their way!\nHang tight, they\'ll be loaded soon!',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.teal.shade800,
+                        letterSpacing: 1.3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  SizedBox(height: 30),
+                  CircularProgressIndicator(
+                    color: Colors.teal.shade800,
+                  ),
+                ],
+              ),
+            );
+          }
+
 
           return Padding(
             padding: const EdgeInsets.all(16.0),

@@ -281,25 +281,29 @@ class CategoryDetailsPage extends StatelessWidget {
                                               child: Icon(Icons.person, size: 50, color: Colors.grey.shade700),
                                             ),
                                             SizedBox(width: 16),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  userName,
-                                                  style: TextStyle(
-                                                    fontSize: 24,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.teal,
+                                            Expanded( // Add Expanded here to prevent overflow
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    userName,
+                                                    style: TextStyle(
+                                                      fontSize: 24,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.teal,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
-                                                ),
-                                                Text(
-                                                  'State: $userState',
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.teal.shade600,
+                                                  Text(
+                                                    'State: $userState',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.teal.shade600,
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -356,7 +360,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                               elevation: 5, // Shadow effect
                                               shadowColor: Colors.black.withOpacity(0.3), // Shadow color
                                             ),
-                                            child: Text(followButtonText),
+                                            child: Text(isRequested?'Requested!':followButtonText),
                                           ),
                                         if (!showFollowButton)
                                           ElevatedButton(

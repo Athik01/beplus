@@ -15,6 +15,7 @@ import 'package:beplus/owner_details.dart';
 import 'AddBills.dart';
 import 'CustomerBills.dart';
 import 'MyPurchases.dart';
+import 'hos.dart';
 class HomePage1 extends StatefulWidget {
   final User? user;
 
@@ -1048,6 +1049,18 @@ class _HomePage1State extends State<HomePage1> {
                     indent: 16,
                     endIndent: 16,
                   ),
+                  _buildDrawerItem(Icons.shopping_cart_rounded, 'History of Purchase', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HOS(customerId: userId,)),
+                    );
+                  }),
+                  Divider(
+                    color: Colors.grey.shade300,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
                   _buildDrawerItem(
                     Icons.logout,
                     'Logout',
@@ -1190,6 +1203,7 @@ class _HomePage1State extends State<HomePage1> {
               StockAlert(userId),
               _buildCategoryCards(),
               _buildFavoriteProducts(),
+              RecentPurchases(userId),
             ],
           ),
         ),
@@ -1240,9 +1254,182 @@ class _HomePage1State extends State<HomePage1> {
     );
   }
 
+  Widget RecentPurchases(String userId) {
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('orders')
+          .where('userId', isEqualTo: userId)
+          .where('status', isEqualTo: 'done')
+          .orderBy('orderDate', descending: true)
+          .limit(3)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Text(
+              'No recent purchases found!',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey),
+            ),
+          );
+        }
+
+        final recentOrders = snapshot.data!.docs;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                'My Recent Purchases 🛍️',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height - 150,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                itemCount: recentOrders.length,
+                itemBuilder: (context, index) {
+                  var order = recentOrders[index];
+                  var productId = order['productId'];
+                  var orderDate = (order['orderDate'] as Timestamp).toDate();
+                  var formattedDate = "${orderDate.day}-${orderDate.month}-${orderDate.year}";
+
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance.collection('products').doc(productId).get(),
+                    builder: (context, productSnapshot) {
+                      if (productSnapshot.connectionState == ConnectionState.waiting) {
+                        return _buildLoadingCard();
+                      }
+
+                      if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
+                        return _buildErrorCard();
+                      }
+
+                      var product = productSnapshot.data!;
+                      var productName = product['name'];
+                      var imageBase64 = product['imageUrl'] ?? '';
+
+                      Uint8List? imageBytes;
+                      if (imageBase64.isNotEmpty) {
+                        try {
+                          imageBytes = base64Decode(imageBase64);
+                        } catch (_) {
+                          imageBytes = null;
+                        }
+                      }
+
+                      return Card(
+                        elevation: 4,
+                        margin: EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.all(12),
+                          title: Text(
+                            productName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Purchased on: $formattedDate',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          trailing: imageBytes != null
+                              ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.memory(
+                              imageBytes,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                              : Icon(Icons.image_not_supported, color: Colors.grey),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Card(
+      elevation: 4,
+      margin: EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(12),
+        title: Container(
+          height: 14,
+          width: 100,
+          color: Colors.grey[300],
+        ),
+        subtitle: Container(
+          height: 12,
+          width: 80,
+          color: Colors.grey[200],
+        ),
+        trailing: Container(
+          width: 60,
+          height: 60,
+          color: Colors.grey[300],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return Card(
+      elevation: 4,
+      margin: EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(12),
+        title: Text(
+          'Product not found',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+        ),
+      ),
+    );
+  }
+
+
+
   Widget StockAlert(String userId) {
     return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance.collection('orders').get(),
+      future: FirebaseFirestore.instance.collection('orders').where('userId', isEqualTo: userId).where('status', isEqualTo: 'done').get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());

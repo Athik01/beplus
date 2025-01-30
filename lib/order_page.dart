@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:beplus/cart_page.dart';
 class OrderPage extends StatelessWidget {
   final String productId;
   final String userId =  FirebaseAuth.instance.currentUser!.uid;
@@ -689,33 +689,37 @@ class OrderPage extends StatelessWidget {
                                               // Feedback for successful addition
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
-                                                  content: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.add_shopping_cart,
-                                                        color: Colors.green,
-                                                      ),
-                                                      SizedBox(width: 10),
-                                                      Expanded(
-                                                        child: Text(
-                                                          'Product added to cart!',
-                                                          style: TextStyle(
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 16,
-                                                            color: Colors.green,
+                                                  content: GestureDetector(
+                                                    onTap: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) => CartPage(userId: userId),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.add_shopping_cart, color: Colors.green),
+                                                        SizedBox(width: 10),
+                                                        Expanded(
+                                                          child: Text(
+                                                            'Product added to cart! Tap to view.',
+                                                            style: TextStyle(
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 16,
+                                                              color: Colors.green,
+                                                            ),
                                                           ),
                                                         ),
-                                                      ),
-                                                    ],
+                                                      ],
+                                                    ),
                                                   ),
                                                   duration: Duration(seconds: 2),
                                                   backgroundColor: Colors.green[100],
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius: BorderRadius.circular(10),
-                                                    side: BorderSide(
-                                                      color: Colors.green, // Green border color
-                                                      width: 2, // Border width
-                                                    ),
+                                                    side: BorderSide(color: Colors.green, width: 2),
                                                   ),
                                                   behavior: SnackBarBehavior.floating,
                                                   elevation: 6,
