@@ -2,7 +2,8 @@ import 'package:beplus/ViewBillScreen.dart';
 import 'package:beplus/recognizeMe.dart';
 import 'package:flutter/material.dart';
 import 'CustomCustomerBill.dart';
-
+import 'AddNewCreditScreen.dart';  // Import the new credit screen
+import 'package:excel/excel.dart';
 class AddCustomerBills extends StatefulWidget {
   final String customerId;
 
@@ -15,10 +16,21 @@ class AddCustomerBills extends StatefulWidget {
 
 class _AddCustomerBillsState extends State<AddCustomerBills> {
   int _selectedIndex = 0;
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+
+    // If Credit Note is tapped (index 2), navigate to AddNewCreditScreen
+    if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddNewCreditScreen(userId: widget.customerId),  // Pass customerId as userId
+        ),
+      );
+    }
   }
 
   @override
@@ -26,7 +38,7 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '           Customer Bills',
+          '            Customer Bills',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -147,7 +159,7 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
         child: BottomNavigationBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          items: const [
+          items: [
             BottomNavigationBarItem(
               icon: Icon(Icons.add),
               label: 'Add Bills',
@@ -155,6 +167,10 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
             BottomNavigationBarItem(
               icon: Icon(Icons.view_list),
               label: 'View Bills',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.currency_rupee),  // Coin icon
+              label: 'Credit Note',  // Credit Note label
             ),
           ],
           currentIndex: _selectedIndex,

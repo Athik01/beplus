@@ -13,8 +13,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:beplus/owner_details.dart';
 
 import 'AddBills.dart';
+import 'BuildCarousel.dart';
 import 'CustomerBills.dart';
 import 'MyPurchases.dart';
+import 'analysis.dart';
 import 'hos.dart';
 class HomePage1 extends StatefulWidget {
   final User? user;
@@ -112,12 +114,26 @@ class _HomePage1State extends State<HomePage1> {
     User? userData = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Welcome, ${userData?.displayName ?? 'User'}!',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        title: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: 'Hi ',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.normal, // Normal weight for "Hi"
+                  color: Colors.white,
+                ),
+              ),
+              TextSpan(
+                text: '${userData?.displayName ?? 'User'}',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold, // Bold weight for the name
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
         flexibleSpace: Container(
@@ -132,21 +148,25 @@ class _HomePage1State extends State<HomePage1> {
         elevation: 8,
         shadowColor: Colors.black.withOpacity(0.4),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => CartPage(userId: userId),
-                ),
+                MaterialPageRoute(builder: (context) => ProfilePage()),
               );
             },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.transparent, // Transparent background
+              ),
+              child: Icon(Icons.person, color: Colors.white, size: 30), // Teal icon for a sleek look
+            ),
           ),
         ],
       ),
       drawer: _buildCustomDrawer(),
-      body: _buildTabbedView(),
+      body: _buildTabbedView(context,userId),
     );
   }
 
@@ -955,7 +975,6 @@ class _HomePage1State extends State<HomePage1> {
   }
 
 
-
   Widget _buildCustomDrawer() {
     return Drawer(
       child: Column(
@@ -1001,18 +1020,6 @@ class _HomePage1State extends State<HomePage1> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _buildDrawerItem(Icons.person, 'Profile', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ProfilePage()),
-                    );
-                  }),
-                  Divider(
-                    color: Colors.grey.shade300,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
                   _buildDrawerItem(Icons.currency_rupee, 'My Purchases', () {
                     Navigator.push(
                       context,
@@ -1029,6 +1036,18 @@ class _HomePage1State extends State<HomePage1> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => ViewCustomerBills(customerId: userId,)),
+                    );
+                  }),
+                  Divider(
+                    color: Colors.grey.shade300,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  _buildDrawerItem(Icons.calculate_sharp, 'Analysis', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AnalysisScreen()),
                     );
                   }),
                   Divider(
@@ -1159,7 +1178,7 @@ class _HomePage1State extends State<HomePage1> {
         SingleChildScrollView(
           child: Column(
             children: [
-              _buildWelcomeText(),
+              //_buildWelcomeText(),
               if (profileCompletion < 100)
                 GestureDetector(
                   onTap: () {
@@ -1200,6 +1219,8 @@ class _HomePage1State extends State<HomePage1> {
                     ),
                   ),
                 ),
+              BuildCarousel(),
+              SizedBox(height: 10),
               StockAlert(userId),
               _buildCategoryCards(),
               _buildFavoriteProducts(),
@@ -1226,7 +1247,7 @@ class _HomePage1State extends State<HomePage1> {
                   'Hello, ${widget.user?.displayName ?? 'Guest'}!',
                   style: TextStyle(
                     color: Colors.black,
-                    fontSize: 32,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                     shadows: [
                       Shadow(
@@ -1245,7 +1266,7 @@ class _HomePage1State extends State<HomePage1> {
             'Discover and book amazing experiences with just a tap.',
             style: TextStyle(
               color: Colors.black,
-              fontSize: 18,
+              fontSize: 12,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -1589,7 +1610,7 @@ class _HomePage1State extends State<HomePage1> {
             ],
           );
         }
-        return Container(); // Return empty container if no low stock alert
+        return Container();
       },
     );
   }
@@ -1774,7 +1795,7 @@ class _HomePage1State extends State<HomePage1> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Text(
-                'New Hot Selling Products! 🔥',
+                'Top Products',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 24,
@@ -1818,6 +1839,7 @@ class _HomePage1State extends State<HomePage1> {
                       imageBytes = null;
                     }
                   }
+
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -1831,7 +1853,7 @@ class _HomePage1State extends State<HomePage1> {
                     },
                     child: Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero, // Sharp edges
                       ),
                       elevation: 10,
                       shadowColor: Colors.teal.withOpacity(0.3),
@@ -1840,27 +1862,23 @@ class _HomePage1State extends State<HomePage1> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                              child: imageBytes != null
-                                  ? Image.memory(
-                                imageBytes,
+                            child: imageBytes != null
+                                ? Image.memory(
+                              imageBytes,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            )
+                                : Container(
+                              color: Colors.grey.shade300,
+                              child: Image.network(
+                                'https://www.w3schools.com/w3images/lights.jpg', // Default image
                                 fit: BoxFit.cover,
-                                width: double.infinity,
-                              )
-                                  : Container(
-                                color: Colors.grey.shade300,
-                                child: Image.network(
-                                  'https://www.w3schools.com/w3images/lights.jpg', // Default image
-                                  fit: BoxFit.cover,
-                                ),
                               ),
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(9)),
                               gradient: LinearGradient(
                                 colors: [Colors.white54, Colors.teal.shade300],
                                 begin: Alignment.topCenter,
@@ -1892,35 +1910,112 @@ class _HomePage1State extends State<HomePage1> {
       },
     );
   }
-  Widget _buildTabbedView() {
+
+  Widget _buildTabbedView(BuildContext context, String userId) {
     return DefaultTabController(
-      length: 4, // Number of tabs
+      length: 5, // Match the number of tabs
       child: Scaffold(
         body: TabBarView(
           physics: NeverScrollableScrollPhysics(),
           children: [
-            _buildBody(), // Home Tab
-            _buildShop(), // Shop Tab
+            _buildBody(),  // Home Tab
+            _buildShop(),  // Shop Tab
+            Container(),   // Empty container for spacing
             _buildSeller(), // Seller Tab
-            _buildBills(), // Bills Tab
+            _buildBills(),  // Orders Tab (Now accessible)
           ],
         ),
-        bottomNavigationBar: Container(
-          color: Colors.teal, // Teal background for TabBar
-          child: TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white54,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(icon: Icon(Icons.home), text: 'Home'),
-              Tab(icon: Icon(Icons.shopping_cart), text: 'Shop'),
-              Tab(icon: Icon(Icons.store), text: 'Seller'),
-              Tab(icon: Icon(Icons.receipt), text: 'My Orders'),
-            ],
-          ),
+        bottomNavigationBar: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Bottom Navigation Container
+            Container(
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(25),
+                  topRight: Radius.circular(25),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(25),
+                  topRight: Radius.circular(25),
+                ),
+                child: TabBar(
+                  labelColor: Colors.teal,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorPadding: EdgeInsets.symmetric(horizontal: 20),
+                  indicator: UnderlineTabIndicator(
+                    borderSide: BorderSide(width: 4.0, color: Colors.teal),
+                    insets: EdgeInsets.symmetric(horizontal: 35),
+                  ),
+                  tabs: [
+                    _buildTab(Icons.home),
+                    _buildTab(Icons.shopping_cart),
+                    SizedBox(width: 60), // Space for Floating Button
+                    _buildTab(Icons.store),
+                    _buildTab(Icons.receipt), // _buildBills() should match this
+                  ],
+                ),
+              ),
+            ),
+
+            // Centered Floating Cart Button
+            Positioned(
+              bottom: 10,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  backgroundColor: Colors.teal,
+                  elevation: 0,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CartPage(userId: userId),
+                      ),
+                    );
+                  },
+                  child: Icon(Icons.add_shopping_cart, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+  Widget _buildTab(IconData icon) {
+    return Tab(
+      icon: Container(
+        padding: EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.teal.withOpacity(0.1),
+        ),
+        child: Icon(icon, size: 26),
+      ),
+    );
+  }
+
+
 }
 

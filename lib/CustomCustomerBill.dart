@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_file/open_file.dart';
+import 'package:excel/excel.dart';
+import 'package:permission_handler/permission_handler.dart';
 class CustomBill extends StatefulWidget {
   final String customerId;
 
@@ -273,6 +275,88 @@ class _CustomBillState extends State<CustomBill> {
     );
   }
 
+  /// Function to get the BEplus storage directory inside the app's private Documents folder
+  Future<String> getBeplusStoragePath(String fileName) async {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final beplusDir = Directory('${appDocDir.path}/BEplus');
+
+    if (!await beplusDir.exists()) {
+      await beplusDir.create(recursive: true);
+    }
+
+    return "${beplusDir.path}/$fileName";
+  }
+
+  /// Function to load or create an Excel file
+  Future<Excel> loadOrCreateExcel(String fileName) async {
+    final filePath = await getBeplusStoragePath(fileName);
+    final file = File(filePath);
+
+    if (await file.exists()) {
+      final bytes = await file.readAsBytes();
+      return Excel.decodeBytes(bytes);
+    } else {
+      return Excel.createExcel();
+    }
+  }
+
+  /// Function to append data to an Excel file
+  Future<void> appendDataToExcel(
+      String fileName,
+      List<Map<String, dynamic>> billItems,
+      String custName,
+      String custMobile,
+      String custAddr,
+      String custShop) async {
+    final excel = await loadOrCreateExcel(fileName);
+    final sheet = excel['Sheet1'];
+
+    // Check if the sheet is empty (first time data insertion) and add headers if needed
+    if (sheet.maxRows == 0) {
+      sheet.appendRow([
+        TextCellValue('Item Name'),
+        TextCellValue('Item Size'),
+        TextCellValue('Item Quantity'),
+        TextCellValue('Item Total'),
+        TextCellValue('Customer Name'),
+        TextCellValue('Customer Mobile'),
+        TextCellValue('Customer Address'),
+        TextCellValue('Customer Shop'),
+        TextCellValue('Date'),
+        TextCellValue('Time'),
+      ]);
+    }
+
+    // Append new data to the existing sheet
+    for (var item in billItems) {
+      sheet.appendRow([
+        TextCellValue(item['itemName']),
+        IntCellValue(item['size']),
+        IntCellValue(item['quantity']),
+        DoubleCellValue(item['itemTotal']),
+        TextCellValue(custName),
+        TextCellValue(custMobile),
+        TextCellValue(custAddr),
+        TextCellValue(custShop),
+        TextCellValue(DateTime.now().toString()),
+      ]);
+    }
+
+    // Get the file path and write the data back to the file
+    final bytes = excel.encode();
+    final filePath = await getBeplusStoragePath(fileName);
+    final file = File(filePath);
+
+    if (await file.exists()) {
+      await file.writeAsBytes(bytes!);
+      print("Data appended and file updated successfully at: $filePath");
+    } else {
+      // If the file doesn't exist, create it
+      await file.writeAsBytes(bytes!);
+      print("Excel file saved successfully at: $filePath");
+    }
+  }
+
 
   void showGeneratedBill(String customerName) async {
     double totalAmount = 0.0;
@@ -281,7 +365,6 @@ class _CustomBillState extends State<CustomBill> {
     billItems.forEach((item) {
       totalAmount += item['itemTotal'];
     });
-
     // You can use the totalAmount in the UI, for example, to display it in the bill.
     print("Total Amount: $totalAmount");
 
@@ -329,6 +412,8 @@ class _CustomBillState extends State<CustomBill> {
     String formattedDate = DateFormat('yyyy-MM-dd').format(now);
     String formattedTime = DateFormat('hh:mm:ss a').format(now);
     String formattedDay = DateFormat('EEEE').format(now);
+    String filePath1 = 'analysis.xlsx';
+    await appendDataToExcel(filePath1, billItems, custName, custMobile, custAddr, custShop);
 
     // Create PDF document
     final pdf = pw.Document();
@@ -871,7 +956,7 @@ class _CustomBillState extends State<CustomBill> {
                           borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
                           borderRadius: BorderRadius.circular(12.0),
                         ),
-                        prefixIcon: Icon(Icons.attach_money, color: Colors.teal), // Teal icon color
+                        prefixIcon: Icon(Icons.currency_rupee, color: Colors.teal), // Teal icon color
                       ),
                     ),
                   ),
