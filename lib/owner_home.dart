@@ -4,16 +4,16 @@ import 'package:beplus/OrderInfo.dart';
 import 'package:beplus/product_details.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore package
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:beplus/profile.dart';
 import 'package:beplus/login.dart';
 import 'package:beplus/manage_products.dart';
-import 'dart:math';
+import 'package:animate_do/animate_do.dart';
 import 'package:beplus/ViewBills.dart';
 import 'package:beplus/product_visibility.dart';
 import 'package:beplus/manage_parties.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-
+import 'dart:ui';
 import 'ManageStatements.dart';
 class HomePage2 extends StatefulWidget {
   final User? user;
@@ -138,6 +138,8 @@ class _HomePage2State extends State<HomePage2> {
 
   // Frosted Glass Card Widget
 }
+
+
 class MainScreen extends StatefulWidget {
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -158,175 +160,342 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
-        toolbarHeight: 4,
+        elevation: 4,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade800, Colors.teal.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        toolbarHeight: 5,
       ),
       body: _pages[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: Offset(0, -2),
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.teal.withOpacity(0.96),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                  offset: Offset(0, -3),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.teal,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white54,
-          showUnselectedLabels: true,
-          showSelectedLabels: true,
-          selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
-          unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal),
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 30),
-              label: 'Home',
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.transparent,
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.white70,
+              showUnselectedLabels: false,
+              showSelectedLabels: false,
+              items: [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_filled, size: 30),
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.group, size: 30),
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: SizedBox.shrink(), // Empty space for floating button
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.receipt_long, size: 30),
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.price_change_outlined, size: 30),
+                  label: '',
+                ),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.group, size: 30),
-              label: 'Parties',
+          ),
+          Positioned(
+            bottom: 30,
+            left: MediaQuery.of(context).size.width / 2 - 35,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _currentIndex = 2;
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  MdiIcons.plusCircle,
+                  size: 40,
+                  color: Colors.teal,
+                ),
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(MdiIcons.plusCircleOutline, size: 30), // Example of a more stylish plus icon
-              label: 'Products',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.receipt, size: 30),
-              label: 'Bills',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.price_change_outlined, size: 30),
-              label: 'Orders',
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // Placeholder Widgets for Pages
+
 class HomeScreen extends StatelessWidget {
   final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Background animation
-        AnimatedBackground(),
-        // Main content
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Scaffold(
+      backgroundColor: Colors.teal.shade50, // Soft background
+      body: Stack(
+        children: [
+          // Gradient Background
+          Positioned(
+            top: -100,
+            left: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Colors.teal.shade100, Colors.teal.shade700],
+                  radius: 1.3,
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            bottom: -150,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Colors.teal.shade100, Colors.teal.shade700],
+                  radius: 1.3,
+                ),
+              ),
+            ),
+          ),
+
+          // Main Content
+          Column(
             children: [
-              // Manage Products Card
-              _buildGlassCard(
-                icon: Icons.inventory,
-                title: 'Manage Products',
-                color: Colors.tealAccent,
-                onTap: () {
-                  if (userId.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ManageProducts(userId: userId),
+              SizedBox(height: 20),
+
+              // Dashboard Title with Divider
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      "Dashboard",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                    );
-                  } else {
-                    print('User not logged in');
-                  }
-                },
-              ),
-              // Manage Parties Card
-              _buildGlassCard(
-                icon: Icons.people_alt_outlined,
-                title: 'Manage Parties',
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ManageParties(userId: userId),
                     ),
-                  );
-                },
-              ),
-              // Bills Card
-              _buildGlassCard(
-                icon: Icons.receipt_long,
-                title: 'Statements',
-                color: Colors.orangeAccent,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ManageStatements(userId: userId),
+                    Expanded(
+                      child: Divider(
+                        thickness: 1,
+                        color: Colors.teal.shade300,
+                        indent: 10,
+                      ),
                     ),
-                  );
-                },
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              // Animated Feature Cards
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.symmetric(horizontal: 15),
+                  children: [
+                    FadeInUp(
+                      duration: Duration(milliseconds: 300),
+                      child: buildGlassCard(
+                        icon: Icons.inventory_2,
+                        title: 'Manage Products',
+                        color: Colors.tealAccent,
+                        onTap: () {
+                          if (userId.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ManageProducts(userId: userId),
+                              ),
+                            );
+                          } else {
+                            print('User not logged in');
+                          }
+                        },
+                      ),
+                    ),
+                    FadeInUp(
+                      duration: Duration(milliseconds: 400),
+                      child: buildGlassCard(
+                        icon: Icons.groups,
+                        title: 'Manage Parties',
+                        color: Colors.blueAccent,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ManageParties(userId: userId),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    FadeInUp(
+                      duration: Duration(milliseconds: 500),
+                      child: buildGlassCard(
+                        icon: Icons.receipt_long,
+                        title: 'Statements',
+                        color: Colors.orangeAccent,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ManageStatements(userId: userId),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
-
-  Widget _buildGlassCard({
+  Widget buildGlassCard({
     required IconData icon,
     required String title,
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withOpacity(0.2), // Frosted glass effect
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: 140,
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.5),
-                blurRadius: 15,
-                offset: Offset(0, 5),
-              ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.15),
+              Colors.white.withOpacity(0.05),
             ],
           ),
-          child: Row(
-            children: [
-              Icon(icon, size: 40, color: color),
-              SizedBox(width: 20),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.20),
+              blurRadius: 10,
+              spreadRadius: 2,
+              offset: Offset(4, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), // Frosted effect
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              padding: EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
               ),
-            ],
+              child: Row(
+                children: [
+                  // **Glowing Icon**
+                  Container(
+                    padding: EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          color.withOpacity(0.7),
+                          color.withOpacity(0.3),
+                        ],
+                        radius: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withOpacity(0.5), // Neon Glow Effect
+                          blurRadius: 12,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, size: 28, color: Colors.white),
+                  ),
+                  SizedBox(width: 15),
+
+                  // **Text with a Subtle Glow**
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // **Glowing Forward Arrow**
+                  Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.9), size: 20),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -334,56 +503,106 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+class IconLoadingIndicator extends StatelessWidget {
+  final double size;
+  final IconData icon;
+  final double iconSize;
+  final Color color;
+  final String loadingText;
+  final TextStyle? textStyle;
+
+  const IconLoadingIndicator({
+    Key? key,
+    this.size = 50.0,
+    required this.icon,
+    this.iconSize = 24.0,
+    this.color = Colors.teal,
+    this.loadingText = 'Loading...',
+    this.textStyle,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
+              Icon(
+                icon,
+                size: iconSize,
+                color: color,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8.0),
+        Text(
+          loadingText,
+          style: textStyle ?? TextStyle(color: color),
+        ),
+      ],
+    );
+  }
+}
 
 class PartiesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-    return FutureBuilder(
-      future: _fetchRequests(currentUserId),
-      builder: (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _fetchAllData(currentUserId),
+      builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildShimmerLoading();
+          return Center(child: IconLoadingIndicator(icon: Icons.account_circle));
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'An error occurred: ${snapshot.error}',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return _buildNoDataScreen();
+          return Center(
+            child: Text(
+              'No Business Contacts',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.redAccent,
+              ),
+            ),
+          );
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           itemCount: snapshot.data!.length,
           itemBuilder: (context, index) {
-            var request = snapshot.data![index];
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(request['customerId'])
-                  .get(),
-              builder: (context, userSnapshot) {
-                if (userSnapshot.connectionState == ConnectionState.waiting) {
-                  return _buildShimmerLoading();
-                }
+            var user = snapshot.data![index];
+            String customerID = user['customerId'];
+            String photoURL = user['photoURL'] ?? '';
+            String name = user['name'] ?? 'Unknown';
+            String contactNumber = user['mobile'] ?? 'N/A';
 
-                if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                  return _buildErrorScreen();
-                }
-
-                var user = userSnapshot.data!;
-                String customerID = user.id;
-                String photoURL = user['photoURL'] ?? '';
-                String name = user['name'] ?? 'Unknown';
-                String contactNumber = user['mobile'] ?? 'N/A';
-
-                return _buildCustomerCard(
-                  context,
-                  customerID,
-                  photoURL,
-                  name,
-                  contactNumber,
-                );
-              },
+            return _buildCustomerCard(
+              context,
+              customerID,
+              photoURL,
+              name,
+              contactNumber,
             );
           },
         );
@@ -391,35 +610,47 @@ class PartiesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildShimmerLoading() {
-    return Center(
-      child: CircularProgressIndicator(),
-    );
-  }
+  Future<List<Map<String, dynamic>>> _fetchAllData(String userId) async {
+    try {
+      // Fetch requests
+      QuerySnapshot requestSnapshot = await FirebaseFirestore.instance
+          .collection('requests')
+          .where('ownerId', isEqualTo: userId)
+          .where('status', isEqualTo: 'Confirmed')
+          .get();
 
-  Widget _buildNoDataScreen() {
-    return Center(
-      child: Text(
-        'No Business Contact',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.redAccent,
-        ),
-      ),
-    );
-  }
+      if (requestSnapshot.docs.isEmpty) {
+        return [];
+      }
 
-  Widget _buildErrorScreen() {
-    return Center(
-      child: Text(
-        'Customer not found.',
-        style: TextStyle(
-          fontSize: 18,
-          color: Colors.grey,
-        ),
-      ),
-    );
+      // Fetch user data for each request
+      List<Future<Map<String, dynamic>?>> userFutures = requestSnapshot.docs.map((doc) async {
+        String customerId = doc['customerId'];
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(customerId)
+            .get();
+
+        if (userDoc.exists) {
+          return {
+            'customerId': customerId,
+            'photoURL': userDoc['photoURL'] ?? '',
+            'name': userDoc['name'] ?? 'Unknown',
+            'mobile': userDoc['mobile'] ?? 'N/A',
+          };
+        } else {
+          return null;
+        }
+      }).toList();
+
+      // Wait for all user data to be fetched
+      List<Map<String, dynamic>?> users = await Future.wait(userFutures);
+
+      // Filter out any null results
+      return users.where((user) => user != null).cast<Map<String, dynamic>>().toList();
+    } catch (e) {
+      throw Exception('Failed to fetch data: $e');
+    }
   }
 
   Widget _buildCustomerCard(
@@ -439,12 +670,12 @@ class PartiesScreen extends StatelessWidget {
         );
       },
       child: Card(
-        elevation: 8,
+        elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
         ),
         color: Colors.transparent,
-        shadowColor: Colors.black.withOpacity(0.3),
+        shadowColor: Colors.black.withOpacity(0.2),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -452,99 +683,67 @@ class PartiesScreen extends StatelessWidget {
               begin: Alignment.bottomRight,
               end: Alignment.topLeft,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                blurRadius: 10,
-                offset: Offset(5, 5),
+                blurRadius: 6,
+                offset: Offset(3, 3),
                 color: Colors.black.withOpacity(0.2),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             child: Row(
               children: [
-                _buildCustomerImage(photoURL),
-                const SizedBox(width: 16),
-                _buildCustomerDetails(name, contactNumber),
-                const SizedBox(width: 16),
-                _buildArrowIcon(),
+                CircleAvatar(
+                  radius: 30,
+                  backgroundImage: photoURL.isNotEmpty
+                      ? NetworkImage(photoURL)
+                      : AssetImage('assets/default_avatar.png') as ImageProvider,
+                  backgroundColor: Colors.white,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.phone, color: Colors.white, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            contactNumber,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildCustomerImage(String photoURL) {
-    return CircleAvatar(
-      radius: 45,
-      backgroundImage: photoURL.isNotEmpty
-          ? NetworkImage(photoURL)
-          : AssetImage('assets/default_avatar.png') as ImageProvider,
-      backgroundColor: Colors.white,
-    );
-  }
-
-  Widget _buildCustomerDetails(String name, String contactNumber) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.phone, color: Colors.white, size: 20),
-              const SizedBox(width: 4),
-              Text(
-                contactNumber,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildArrowIcon() {
-    return Icon(
-      Icons.arrow_forward_ios,
-      color: Colors.white,
-      size: 24,
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchRequests(String userId) async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('requests')
-        .where('ownerId', isEqualTo: userId)
-        .where('status', isEqualTo: 'Confirmed')
-        .get();
-
-    List<Map<String, dynamic>> requests = snapshot.docs.map((doc) {
-      return {
-        'customerId': doc['customerId'],
-        'status': doc['status'],
-        'ownerId': doc['ownerId'],
-      };
-    }).toList();
-
-    return requests;
   }
 }
 
@@ -724,35 +923,11 @@ class BillsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.price_change,
-              color: Colors.white,
-              size: 28,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Bills',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.teal.shade300,
-        elevation: 4.0,
-      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('orders').snapshots(),
         builder: (context, ordersSnapshot) {
           if (ordersSnapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingIndicator();
+            return _buildLoadingScreen();
           }
 
           if (!ordersSnapshot.hasData || ordersSnapshot.data!.docs.isEmpty) {
@@ -765,7 +940,7 @@ class BillsScreen extends StatelessWidget {
             future: _fetchMatchingOrders(orders, currentUserId, context),
             builder: (context, matchingOrdersSnapshot) {
               if (matchingOrdersSnapshot.connectionState == ConnectionState.waiting) {
-                return _buildLoadingIndicator();
+                return _buildLoadingScreen();
               }
 
               if (!matchingOrdersSnapshot.hasData || matchingOrdersSnapshot.data!.isEmpty) {
@@ -780,11 +955,46 @@ class BillsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingIndicator() {
+  Widget _buildLoadingScreen() {
     return Center(
-      child: CircularProgressIndicator(
-        strokeWidth: 3.0,
-        valueColor: AlwaysStoppedAnimation(Colors.blue),
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal.shade100, Colors.teal.shade300],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Animated loading icon with a circular progress bar
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(Colors.teal),
+              strokeWidth: 4.0, // Make the progress bar thicker for a better look
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Loading...',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Please wait while we fetch your data.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.7), // Light grey color for subtler text
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -895,47 +1105,17 @@ class BillsScreen extends StatelessWidget {
   }
 }
 
-
-
-
 class BalanceScreen extends StatelessWidget {
   final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.shopping_cart,
-              color: Colors.white,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'View Orders',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.teal.shade300,
-        elevation: 4.0,
-      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('orders').snapshots(),
         builder: (context, ordersSnapshot) {
           if (ordersSnapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2.0,
-                valueColor: AlwaysStoppedAnimation(Colors.blue),
-              ),
-            );
+            return _buildLoadingScreen(); // Show loading indicator
           }
 
           if (!ordersSnapshot.hasData || ordersSnapshot.data!.docs.isEmpty) {
@@ -952,12 +1132,7 @@ class BalanceScreen extends StatelessWidget {
             future: _fetchMatchingOrders(orders, currentUserId, context),
             builder: (context, matchingOrdersSnapshot) {
               if (matchingOrdersSnapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.0,
-                    valueColor: AlwaysStoppedAnimation(Colors.blue),
-                  ),
-                );
+                return _buildLoadingScreen(); // Show loading indicator
               }
               if (!matchingOrdersSnapshot.hasData || matchingOrdersSnapshot.data!.isEmpty) {
                 return Center(
@@ -1013,6 +1188,52 @@ class BalanceScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildLoadingScreen() {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal.shade100, Colors.teal.shade300],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Animated loading icon with a circular progress bar
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(Colors.teal),
+              strokeWidth: 4.0, // Make the progress bar thicker for a better look
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Loading...',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Please wait while we fetch your data.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.7), // Light grey color for subtler text
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
   Future<Map<String, List<Map<String, dynamic>>>> _fetchMatchingOrders(
       List<QueryDocumentSnapshot> orders, String currentUserId, BuildContext context) async {
     Map<String, List<Map<String, dynamic>>> userOrdersMap = {};
@@ -1064,135 +1285,4 @@ class BalanceScreen extends StatelessWidget {
   }
 }
 
-
-class AnimatedBackground extends StatefulWidget {
-  @override
-  _AnimatedBackgroundState createState() => _AnimatedBackgroundState();
-}
-
-class _AnimatedBackgroundState extends State<AnimatedBackground>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: 10),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Animated Background
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    ColorTween(
-                      begin: Colors.teal.shade700,
-                      end: Colors.purple.shade800,
-                    ).evaluate(_controller)!,
-                    ColorTween(
-                      begin: Colors.deepPurple.shade400,
-                      end: Colors.blue.shade900,
-                    ).evaluate(_controller)!,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            );
-          },
-        ),
-        // Bubbles Layer
-        BubbleWidget(size: 60, animationDuration: Duration(seconds: 17)),
-        BubbleWidget(size: 90, animationDuration: Duration(seconds: 7)),
-        BubbleWidget(size: 120, animationDuration: Duration(seconds: 14)),
-        BubbleWidget(size: 80, animationDuration: Duration(seconds: 10)),
-      ],
-    );
-  }
-}
-
-class BubbleWidget extends StatefulWidget {
-  final double size;
-  final Duration animationDuration;
-
-  const BubbleWidget({
-    required this.size,
-    required this.animationDuration,
-  });
-
-  @override
-  _BubbleWidgetState createState() => _BubbleWidgetState();
-}
-
-class _BubbleWidgetState extends State<BubbleWidget> with TickerProviderStateMixin {
-  late AnimationController _bubbleController;
-  late Animation<double> _rotationAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Initialize the animation controller with infinite looping
-    _bubbleController = AnimationController(
-      vsync: this,
-      duration: widget.animationDuration,
-    )..repeat(reverse: true); // Make the animation repeat
-
-    // Circular path animation (sine and cosine for circular movement)
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 2 * 3.14159265359) // Full circle (2π)
-        .animate(CurvedAnimation(parent: _bubbleController, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _bubbleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _rotationAnimation, // Make sure _rotationAnimation is being used here
-      builder: (context, child) {
-        // Calculate the new position using sine and cosine for a circular path
-        double radius = 200; // Radius of the circular path
-        double centerX = MediaQuery.of(context).size.width / 2; // Center X of the screen
-        double centerY = MediaQuery.of(context).size.height / 2; // Center Y of the screen
-
-        // Circular motion: sine and cosine functions
-        double x = centerX + radius * cos(_rotationAnimation.value); // X position
-        double y = centerY + radius * sin(_rotationAnimation.value); // Y position
-
-        return Positioned(
-          left: x - widget.size / 2, // Adjust to center the bubble
-          top: y - widget.size / 2, // Adjust to center the bubble
-          child: Container(
-            width: widget.size,
-            height: widget.size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.7),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
 

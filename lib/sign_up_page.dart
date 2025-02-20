@@ -118,8 +118,12 @@ class _SignupPageState extends State<SignupPage> with TickerProviderStateMixin {
         _loading = true;
       });
 
+      // Force Google Sign-In to show account selection dialog
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut(); // Ensure no previous session persists
+
       // Initiating Google Sign-In
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         setState(() {
           _loading = false;
@@ -127,8 +131,7 @@ class _SignupPageState extends State<SignupPage> with TickerProviderStateMixin {
         return; // User canceled the sign-in process
       }
 
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       // Generating Firebase credential
       final credential = GoogleAuthProvider.credential(
@@ -137,8 +140,7 @@ class _SignupPageState extends State<SignupPage> with TickerProviderStateMixin {
       );
 
       // Signing in with Firebase using the Google credentials
-      final userCredential =
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
 
       // Fetching the user
       final user = userCredential.user;
@@ -179,6 +181,7 @@ class _SignupPageState extends State<SignupPage> with TickerProviderStateMixin {
       // Show error message to the user
     }
   }
+
 
   Future<void> _signup() async {
     setState(() {

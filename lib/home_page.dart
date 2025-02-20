@@ -13,9 +13,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:beplus/owner_details.dart';
 
 import 'AddBills.dart';
+import 'AddProducts.dart';
 import 'BuildCarousel.dart';
 import 'CustomerBills.dart';
 import 'MyPurchases.dart';
+import 'ProductDetailsPage.dart';
 import 'analysis.dart';
 import 'hos.dart';
 class HomePage1 extends StatefulWidget {
@@ -1225,55 +1227,177 @@ class _HomePage1State extends State<HomePage1> {
               _buildCategoryCards(),
               _buildFavoriteProducts(),
               RecentPurchases(userId),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection("cust_products")
+                    .where("userId", isEqualTo: FirebaseAuth.instance.currentUser?.uid) // Filter by userId
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 🎨 Add an illustration or icon
+                            Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 80,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 15),
+
+                            // 📝 Styled message
+                            Text(
+                              "No products available",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            // 🏷️ Subtext for better user engagement
+                            Text(
+                              "Start adding your products to manage inventory efficiently!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  // 📌 Classify products dynamically
+                  List<DocumentSnapshot> perishableProducts = [];
+                  List<DocumentSnapshot> sizeVariantProducts = [];
+                  List<DocumentSnapshot> regularProducts = [];
+
+                  for (var doc in snapshot.data!.docs) {
+                    var product = doc.data() as Map<String, dynamic>;
+                    bool hasExpiryDate = product["hasExpiryDate"] ?? false;
+                    bool hasSizeVariants = product["hasSizeVariants"] ?? false;
+
+                    if (hasExpiryDate) {
+                      perishableProducts.add(doc);
+                    } else if (hasSizeVariants) {
+                      sizeVariantProducts.add(doc);
+                    } else {
+                      regularProducts.add(doc);
+                    }
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (perishableProducts.isNotEmpty)
+                        productCategorySection(
+                            context, "Perishable Products", perishableProducts),
+                      if (sizeVariantProducts.isNotEmpty)
+                        productCategorySection(
+                            context, "Size-Variant Products", sizeVariantProducts),
+                      if (regularProducts.isNotEmpty)
+                        productCategorySection(context, "Regular Products", regularProducts),
+                    ],
+                  );
+                },
+              ),
             ],
           ),
         ),
       ],
     );
   }
-
-  Widget _buildWelcomeText() {
+  Widget productCategorySection(BuildContext context,String title, List<DocumentSnapshot> products) {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.waving_hand, color: Colors.black, size: 30),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Hello, ${widget.user?.displayName ?? 'Guest'}!',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 10,
-                        color: Colors.black.withOpacity(0.4),
-                        offset: Offset(2, 2),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
           Text(
-            'Discover and book amazing experiences with just a tap.',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: products.map((doc) {
+                var product = doc.data() as Map<String, dynamic>;
+                product["id"] = doc.id;
+                return productCard(context,product);
+              }).toList(),
             ),
           ),
         ],
       ),
     );
   }
+
+  // 🖼 PRODUCT CARD UI
+  Widget productCard(BuildContext context, Map<String, dynamic> product) {
+    Uint8List? imageBytes;
+    if (product["imageBase64"] != null) {
+      imageBytes = base64Decode(product["imageBase64"]);
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailsPage(product: product),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        width: 160,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+              child: imageBytes != null
+                  ? Image.memory(imageBytes, height: 120, width: 160, fit: BoxFit.cover)
+                  : Image.asset("lib/assets/broken.jpg", height: 120, width: 160, fit: BoxFit.cover),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(product["name"], style: const TextStyle(fontWeight: FontWeight.bold)),
+                  if (product["hasSizeVariants"] ?? false)
+                    Text("Multiple Sizes Available", style: const TextStyle(color: Colors.grey)),
+                  if (!(product["hasSizeVariants"] ?? false))
+                    Text("Rs. ${product["price"]}", style: const TextStyle(color: Colors.green)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget RecentPurchases(String userId) {
     return FutureBuilder<QuerySnapshot>(
@@ -1918,7 +2042,20 @@ class _HomePage1State extends State<HomePage1> {
         body: TabBarView(
           physics: NeverScrollableScrollPhysics(),
           children: [
-            _buildBody(),  // Home Tab
+            Scaffold(
+            body: _buildBody(),
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: Colors.teal,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text("Add Product", style: TextStyle(color: Colors.white)),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddProductPage()),
+            );
+          },
+        ),
+      ),// Home Tab
             _buildShop(),  // Shop Tab
             Container(),   // Empty container for spacing
             _buildSeller(), // Seller Tab

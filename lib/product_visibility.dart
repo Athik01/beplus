@@ -15,6 +15,7 @@ class ProductVisibility extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
+            Text('       '),
             Icon(
               Icons.visibility,
               color: Colors.white,
@@ -24,6 +25,7 @@ class ProductVisibility extends StatelessWidget {
               'Product Visibility',
               style: TextStyle(
                 color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -466,5 +468,4 @@ class ProductVisibility extends StatelessWidget {
       ),
     );
   }
-
 }

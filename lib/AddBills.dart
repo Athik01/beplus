@@ -3,7 +3,7 @@ import 'package:beplus/recognizeMe.dart';
 import 'package:flutter/material.dart';
 import 'CustomCustomerBill.dart';
 import 'AddNewCreditScreen.dart';  // Import the new credit screen
-import 'package:excel/excel.dart';
+
 class AddCustomerBills extends StatefulWidget {
   final String customerId;
 

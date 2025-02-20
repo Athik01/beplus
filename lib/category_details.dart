@@ -4,13 +4,17 @@ import 'package:beplus/view_products.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-class CategoryDetailsPage extends StatelessWidget {
+class CategoryDetailsPage extends StatefulWidget {
   final String categoryId;
 
   const CategoryDetailsPage({Key? key, required this.categoryId}) : super(key: key);
 
+  @override
+  _CategoryDetailsPageState createState() => _CategoryDetailsPageState();
+}
 
+class _CategoryDetailsPageState extends State<CategoryDetailsPage> {
+  bool isRequested = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,7 +37,7 @@ class CategoryDetailsPage extends StatelessWidget {
       body: Container(
         color: Colors.teal.shade50, // Light teal background
         child: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('categories').doc(categoryId).get(),
+          future: FirebaseFirestore.instance.collection('categories').doc(widget.categoryId).get(),
           builder: (context, categorySnapshot) {
             if (categorySnapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.teal)));
@@ -62,7 +66,7 @@ class CategoryDetailsPage extends StatelessWidget {
             }
 
             return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance.collection('categories').doc(categoryId).get(),
+              future: FirebaseFirestore.instance.collection('categories').doc(widget.categoryId).get(),
               builder: (context, categorySnapshot) {
                 if (categorySnapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.teal)));
@@ -326,7 +330,9 @@ class CategoryDetailsPage extends StatelessWidget {
                                                     'status': 'Not Confirmed',
                                                     'timestamp': FieldValue.serverTimestamp(),
                                                   });
-
+                                                  setState(() {
+                                                    isRequested = true;
+                                                  });
                                                   // Show feedback to the user
                                                   ScaffoldMessenger.of(context).showSnackBar(
                                                     SnackBar(
