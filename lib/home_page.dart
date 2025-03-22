@@ -13,6 +13,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:beplus/owner_details.dart';
 
 import 'AddBills.dart';
+import 'AddNewCreditScreen.dart';
 import 'AddProducts.dart';
 import 'BuildCarousel.dart';
 import 'CustomerBills.dart';
@@ -141,7 +142,7 @@ class _HomePage1State extends State<HomePage1> {
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal.shade800, Colors.teal.shade400],
+              colors: [Colors.teal.shade900, Colors.teal.shade300],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -157,19 +158,37 @@ class _HomePage1State extends State<HomePage1> {
                 MaterialPageRoute(builder: (context) => ProfilePage()),
               );
             },
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.transparent, // Transparent background
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Colors.teal],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      offset: Offset(0, 4),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.person, color: Colors.white, size: 30),
               ),
-              child: Icon(Icons.person, color: Colors.white, size: 30), // Teal icon for a sleek look
-            ),
           ),
         ],
       ),
       drawer: _buildCustomDrawer(),
       body: _buildTabbedView(context,userId),
     );
+  }
+
+  // Helper function to capitalize the first letter
+  String capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
   }
 
   Widget _buildShop() {
@@ -194,98 +213,140 @@ class _HomePage1State extends State<HomePage1> {
           }
 
           return Scaffold(
-            body: GridView.builder(
-              padding: const EdgeInsets.all(8.0),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Two products per row
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 0.7, // Reduced the ratio to increase card height
-              ),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                var product = products[index];
-                final productId = product['id'];
-
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OrderPage(productId: productId),
-                      ),
-                    );
-                  },
-                  child: Card(
-                    color: Colors.teal.shade300, // Teal combo for the card background
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            body: Stack(
+              children: [
+                // Background image with white fade effect
+                Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage('lib/assets/shop.png'),
+                      fit: BoxFit.cover,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Product Image
-                        ClipRRect(
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            topRight: Radius.circular(12),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withOpacity(0.5),
+                          Colors.white.withOpacity(0.7),
+                          Colors.white.withOpacity(0.3),
+                        ],
+                        stops: [0.0, 0.7, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                // Foreground grid of products
+                GridView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, // Two products per row
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.65, // Adjusted for better card height
+                  ),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    var product = products[index];
+                    final productId = product['id'];
+                    // Convert product name to have the first letter in caps
+                    final productName = capitalize(product['name'] ?? 'Unnamed Product');
+                    final imageUrl = product['imageUrl'];
+
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OrderPage(productId: productId),
                           ),
-                          child: product['imageUrl'] != null
-                              ? Image.memory(
-                            base64Decode(product['imageUrl']),
-                            width: double.infinity,
-                            height: 205, // Fixed height for uniformity
-                            fit: BoxFit.cover,
-                          )
-                              : Container(
-                            width: double.infinity,
-                            height: 140,
-                            color: Colors.grey[300],
-                            child: Center(
-                              child: Text(
-                                'No Image',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
+                        );
+                      },
+                      child: Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          children: [
+                            // Product Image with Hero animation
+                            Hero(
+                              tag: 'productImage-$productId',
+                              child: imageUrl != null
+                                  ? Image.memory(
+                                base64Decode(imageUrl),
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                              )
+                                  : Container(
+                                width: double.infinity,
+                                color: Colors.grey[300],
+                                child: Center(
+                                  child: Text(
+                                    'No Image',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center, // Centers the content horizontally
-                          crossAxisAlignment: CrossAxisAlignment.center, // Centers the content vertically
-                          children: [
-                            Icon(Icons.shopping_cart, color: Colors.white),
-                            const SizedBox(width: 8), // Adds space between the icon and text
-                            Text(
-                              product['name'] ?? 'Unnamed Product',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.white,
+                            // Gradient overlay for product name readability
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withOpacity(0.7)
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                                child: Text(
+                                  productName,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        blurRadius: 4,
+                                        color: Colors.black38,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           );
         }
       },
     );
   }
-
-
 
   Future<List> _fetchProducts() async {
     // Get the current user's ID (this depends on your authentication setup)
@@ -979,11 +1040,25 @@ class _HomePage1State extends State<HomePage1> {
 
   Widget _buildCustomDrawer() {
     return Drawer(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
       child: Column(
         children: [
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.teal, // Teal header
+              gradient: LinearGradient(
+                colors: [Colors.teal.shade900, Colors.teal.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -992,7 +1067,8 @@ class _HomePage1State extends State<HomePage1> {
                   CircleAvatar(
                     radius: 50,
                     backgroundImage: NetworkImage(
-                      widget.user?.photoURL ?? 'https://www.w3schools.com/howto/img_avatar.png',
+                      widget.user?.photoURL ??
+                          'https://www.w3schools.com/howto/img_avatar.png',
                     ),
                     backgroundColor: Colors.white,
                     child: widget.user?.photoURL == null
@@ -1006,6 +1082,9 @@ class _HomePage1State extends State<HomePage1> {
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(color: Colors.black45, blurRadius: 4),
+                      ],
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -1015,10 +1094,9 @@ class _HomePage1State extends State<HomePage1> {
               ),
             ),
           ),
-
           Expanded(
             child: Container(
-              color: Colors.white, // White body background
+              color: Colors.white,
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -1028,80 +1106,58 @@ class _HomePage1State extends State<HomePage1> {
                       MaterialPageRoute(builder: (context) => MyPurchases()),
                     );
                   }),
-                  Divider(
-                    color: Colors.grey.shade300,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
+                  _buildCustomDivider(),
                   _buildDrawerItem(Icons.shopping_bag, 'My Bills', () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ViewCustomerBills(customerId: userId,)),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              ViewCustomerBills(customerId: userId)),
                     );
                   }),
-                  Divider(
-                    color: Colors.grey.shade300,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
+                  _buildCustomDivider(),
                   _buildDrawerItem(Icons.calculate_sharp, 'Analysis', () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => AnalysisScreen()),
                     );
                   }),
-                  Divider(
-                    color: Colors.grey.shade300,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
-                  _buildDrawerItem(Icons.shopping_bag_outlined, 'Purchase Bills', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AddCustomerBills(customerId: userId,)),
-                    );
-                  }),
-                  Divider(
-                    color: Colors.grey.shade300,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
-                  _buildDrawerItem(Icons.shopping_cart_rounded, 'History of Purchase', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HOS(customerId: userId,)),
-                    );
-                  }),
-                  Divider(
-                    color: Colors.grey.shade300,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
+                  _buildCustomDivider(),
                   _buildDrawerItem(
-                    Icons.logout,
-                    'Logout',
-                        () async {
-                      try {
-                        await FirebaseAuth.instance.signOut();
-                        final GoogleSignIn googleSignIn = GoogleSignIn();
-                        if (await googleSignIn.isSignedIn()) {
-                          await googleSignIn.signOut();
-                          await googleSignIn.disconnect();
-                        }
-                        Navigator.pushReplacement(
+                      Icons.shopping_bag_outlined, 'Purchase Bills', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              AddCustomerBills(customerId: userId)),
+                    );
+                  }),
+                  _buildCustomDivider(),
+                  _buildDrawerItem(Icons.shopping_cart_rounded,
+                      'History of Purchase', () {
+                        Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => LoginApp()),
+                          MaterialPageRoute(
+                              builder: (context) => HOS(customerId: userId)),
                         );
-                      } catch (e) {
-                        print('Error during logout: $e');
+                      }),
+                  _buildCustomDivider(),
+                  _buildDrawerItem(Icons.logout, 'Logout', () async {
+                    try {
+                      await FirebaseAuth.instance.signOut();
+                      final GoogleSignIn googleSignIn = GoogleSignIn();
+                      if (await googleSignIn.isSignedIn()) {
+                        await googleSignIn.signOut();
+                        await googleSignIn.disconnect();
                       }
-                    },
-                  ),
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginApp()),
+                      );
+                    } catch (e) {
+                      print('Error during logout: $e');
+                    }
+                  }),
                 ],
               ),
             ),
@@ -1110,6 +1166,16 @@ class _HomePage1State extends State<HomePage1> {
       ),
     );
   }
+
+  Widget _buildCustomDivider() {
+    return Divider(
+      color: Colors.grey.shade300,
+      thickness: 1,
+      indent: 16,
+      endIndent: 16,
+    );
+  }
+
 
   Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
     return Padding(
@@ -1261,7 +1327,7 @@ class _HomePage1State extends State<HomePage1> {
                               ),
                             ),
 
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
 
                             // 🏷️ Subtext for better user engagement
                             Text(
@@ -1831,61 +1897,61 @@ class _HomePage1State extends State<HomePage1> {
                         ),
                       );
                     },
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 10,
-                      shadowColor: Colors.teal.withOpacity(0.3),
-                      color: Colors.white,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                              child: imageBytes != null
-                                  ? Image.memory(
-                                imageBytes,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                              )
-                                  : Container(
-                                color: Colors.grey.shade300,
-                                child: Icon(
-                                  Icons.image,
-                                  size: 48,
-                                  color: Colors.grey.shade600,
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16), // Increased and unified border radius
+                        ),
+                        elevation: 10,
+                        shadowColor: Colors.teal.withOpacity(0.3),
+                        color: Colors.white,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                child: imageBytes != null
+                                    ? Image.memory(
+                                  imageBytes,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                )
+                                    : Container(
+                                  color: Colors.grey.shade300,
+                                  child: Icon(
+                                    Icons.image,
+                                    size: 48,
+                                    color: Colors.grey.shade600,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(9)),
-                              gradient: LinearGradient(
-                                colors: [Colors.white54, Colors.teal.shade300],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                                gradient: LinearGradient(
+                                  colors: [Colors.white, Colors.teal.shade100],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                              child: Text(
+                                productName,
+                                style: TextStyle(
+                                  color: Colors.teal.shade900,
+                                  fontSize: 18, // Increased font size
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            child: Text(
-                              productName,
-                              style: TextStyle(
-                                color: Colors.teal.shade900,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                   );
                 },
               ),
@@ -1902,7 +1968,7 @@ class _HomePage1State extends State<HomePage1> {
       future: _categoriesCollection.get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
@@ -1910,126 +1976,153 @@ class _HomePage1State extends State<HomePage1> {
         }
 
         if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text('No categories available'));
+          return const Center(child: Text('No categories available'));
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text(
-                'Top Products',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 4,
-                      color: Colors.black.withOpacity(0.3),
-                      offset: Offset(2, 2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height - 150,
-              ),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: snapshot.data!.docs.length,
-                itemBuilder: (context, index) {
-                  var category = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-                  String categoryName = category['name'] ?? 'Unnamed';
-                  String imageBase64 = category['image'] ?? '';
-
-                  Uint8List? imageBytes;
-                  if (imageBase64.isNotEmpty) {
-                    try {
-                      imageBytes = base64Decode(imageBase64);
-                    } catch (e) {
-                      imageBytes = null;
-                    }
-                  }
-
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryDetailsPage(
-                            categoryId: snapshot.data!.docs[index].id,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero, // Sharp edges
-                      ),
-                      elevation: 10,
-                      shadowColor: Colors.teal.withOpacity(0.3),
-                      color: Colors.white,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: imageBytes != null
-                                ? Image.memory(
-                              imageBytes,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            )
-                                : Container(
-                              color: Colors.grey.shade300,
-                              child: Image.network(
-                                'https://www.w3schools.com/w3images/lights.jpg', // Default image
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Colors.white54, Colors.teal.shade300],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
-                            child: Text(
-                              categoryName,
-                              style: TextStyle(
-                                color: Colors.teal.shade900,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with "Top Products" text and a button on the right
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Top Products',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.0,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 4,
+                            color: Colors.black.withOpacity(0.2),
+                            offset: const Offset(2, 2),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddNewCreditScreen(userId: FirebaseAuth.instance.currentUser!.uid),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.teal,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      icon: const Icon(Icons.account_balance_wallet, size: 24),
+                      label: const Text("Add Credit"),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              // Category Grid
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16.0,
+                    mainAxisSpacing: 16.0,
+                    childAspectRatio: 0.8,
+                  ),
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    var categoryData = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                    String categoryName = categoryData['name'] ?? 'Unnamed';
+                    String imageBase64 = categoryData['image'] ?? '';
+
+                    Uint8List? imageBytes;
+                    if (imageBase64.isNotEmpty) {
+                      try {
+                        imageBytes = base64Decode(imageBase64);
+                      } catch (e) {
+                        imageBytes = null;
+                      }
+                    }
+
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CategoryDetailsPage(
+                              categoryId: snapshot.data!.docs[index].id,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: 5,
+                        shadowColor: Colors.grey.withOpacity(0.3),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Category image with rounded top corners
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                                child: imageBytes != null
+                                    ? Image.memory(
+                                  imageBytes,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                )
+                                    : Image.network(
+                                  'https://www.w3schools.com/w3images/lights.jpg',
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                ),
+                              ),
+                            ),
+                            // Category title container with gradient
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                                gradient: LinearGradient(
+                                  colors: [Colors.white, Colors.teal.shade100],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                              child: Text(
+                                categoryName,
+                                style: TextStyle(
+                                  color: Colors.teal.shade900,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -2043,19 +2136,18 @@ class _HomePage1State extends State<HomePage1> {
           physics: NeverScrollableScrollPhysics(),
           children: [
             Scaffold(
-            body: _buildBody(),
-        floatingActionButton: FloatingActionButton.extended(
-          backgroundColor: Colors.teal,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text("Add Product", style: TextStyle(color: Colors.white)),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddProductPage()),
-            );
-          },
-        ),
-      ),// Home Tab
+              body: _buildBody(),
+              floatingActionButton: FloatingActionButton(
+                backgroundColor: Colors.teal,
+                child: const Icon(Icons.add, color: Colors.white), // Using credit-related icon
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddProductPage()),
+                  );
+                },
+              ),
+            ),// Home Tab
             _buildShop(),  // Shop Tab
             Container(),   // Empty container for spacing
             _buildSeller(), // Seller Tab
@@ -2152,7 +2244,6 @@ class _HomePage1State extends State<HomePage1> {
       ),
     );
   }
-
 
 }
 

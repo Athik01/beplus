@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -114,94 +115,163 @@ class _ViewBillsState extends State<ViewCustomerBills> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          '       View & Share Bills',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.teal,
-        elevation: 4,
-        actions: [
-          Visibility(
-            visible: !isPdfVisible, // Hide the icon when isPdfVisible is true
-            child: IconButton(
-              icon: Icon(Icons.filter_list, color: Colors.white),
-              tooltip: 'Filter',
-              onPressed: () {
-                setState(() {
-                  isCalendarVisible = !isCalendarVisible; // Toggle calendar visibility
-                });
-              },
-            ),
-          )
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.teal.shade200, Colors.teal.shade900],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Horizontal Calendar, displayed on top when visible
-                if (isCalendarVisible)
-                  SafeArea(
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(15), // Rounded corners for the container
-                            ),
-                            child: HorizontalWeekCalendar(
-                              minDate: DateTime.now().subtract(Duration(days: 30)),
-                              maxDate: DateTime.now().add(Duration(days: 30)),
-                              initialDate: selectedDate,
-                              onDateChange: (date) {
-                                setState(() {
-                                  selectedDate = date;
-                                  isCalendarVisible = false;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Expanded(
-                  child: Center(
-                    child: isLoading
-                        ? _buildLoadingState()
-                        : isError
-                        ? _buildErrorState()
-                        : isPdfVisible
-                        ? _buildEnhancedPdfView()
-                        : _buildOrderList(),
-                  ),
+      backgroundColor: Colors.teal.shade900,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60.0),
+        child: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF00695C), // Dark teal
+                  Color(0xFF26A69A), // Light teal
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
                 ),
               ],
             ),
           ),
+          elevation: 0,
+          title: Center(
+            child: Text(
+              'View & Share Bills',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    offset: Offset(1, 1),
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            Visibility(
+              visible: !isPdfVisible,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  splashColor: Colors.tealAccent.withOpacity(0.3),
+                  onTap: () {
+                    setState(() {
+                      isCalendarVisible = !isCalendarVisible;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.shade800,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.filter_list,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+      body: Stack(
+        children: [
+          // Background Image
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('lib/assets/bill.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          // Teal Gradient Overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.teal.shade900.withOpacity(0.9), // Darker at the top
+                  Colors.teal.shade700.withOpacity(0.5), // Medium shade
+                  Colors.teal.shade500.withOpacity(0.5), // Lighter shade
+                  Colors.teal.shade900.withOpacity(0.9), // Lightest at the bottom
+                ],
+                stops: const [0.0, 0.4, 0.7, 1.0],
+              ),
+            ),
+          ),
+
+          // Main Content
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Calendar Section
+                  if (isCalendarVisible)
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: HorizontalWeekCalendar(
+                        minDate: DateTime.now().subtract(const Duration(days: 30)),
+                        maxDate: DateTime.now().add(const Duration(days: 30)),
+                        initialDate: selectedDate,
+                        onDateChange: (date) {
+                          setState(() {
+                            selectedDate = date;
+                            isCalendarVisible = false;
+                          });
+                        },
+                      ),
+                    ),
+
+                  // Main Content Display
+                  Expanded(
+                    child: Center(
+                      child: isLoading
+                          ? _buildLoadingState()
+                          : isError
+                          ? _buildErrorState()
+                          : isPdfVisible
+                          ? _buildEnhancedPdfView()
+                          : _buildOrderList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+
 
   List _getFilteredBills() {
     return billsData.where((bill) {
@@ -251,7 +321,7 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[400],
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -369,64 +439,110 @@ class _ViewBillsState extends State<ViewCustomerBills> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'Your Bill',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        SizedBox(height: 20),
-        Container(
-          height: 500,
-          margin: EdgeInsets.symmetric(horizontal: 20),
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 8,
-                offset: Offset(0, 4),
+        // Glassmorphism-style PDF Container
+        ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              // Semi-transparent background
+              Container(
+                height: 620,
+                margin: const EdgeInsets.symmetric(horizontal: 12), // Reduced margin for more width
+                padding: const EdgeInsets.all(20), // Slightly increased padding
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1.8,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black38,
+                      blurRadius: 12,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Apply the blur effect
+              BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  height: 620,
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: localPath == null
+                        ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(Colors.tealAccent),
+                      ),
+                    )
+                        : PDFView(
+                      filePath: localPath!,
+                      enableSwipe: true,
+                      swipeHorizontal: true,
+                      autoSpacing: true,
+                      pageFling: true,
+                      onError: (error) {
+                        setState(() {
+                          isError = true;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Error loading PDF')),
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: PDFView(
-              filePath: localPath!,
-              enableSwipe: true,
-              swipeHorizontal: true,
-              autoSpacing: true,
-              pageFling: true,
-              onError: (error) {
-                setState(() {
-                  isError = true;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error loading PDF')),
-                );
-              },
-            ),
-          ),
         ),
-        SizedBox(height: 20),
+
+        const SizedBox(height: 30),
+
+        // Enhanced Share Button with Gradient and Shadow
         ElevatedButton.icon(
           onPressed: _sharePdf,
-          icon: Icon(Icons.share),
-          label: Text('Share Bill'),
+          icon: const Icon(Icons.share, size: 24, color: Colors.teal),
+          label: const Text(
+            'Share Bill',
+            style: TextStyle(
+              color: Colors.teal,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.teal.shade800,
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 16),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            elevation: 10,
+            shadowColor: Colors.black54,
+            backgroundColor: Colors.transparent,
+          ).copyWith(
+            backgroundColor: MaterialStateProperty.resolveWith((states) {
+              if (states.contains(MaterialState.pressed)) {
+                return Colors.teal.shade700;
+              }
+              return null;
+            }),
+            foregroundColor: MaterialStateProperty.all(Colors.white),
           ),
         ),
       ],
     );
   }
+
 
   Widget _buildLoadingState() {
     return Column(

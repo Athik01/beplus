@@ -1,13 +1,15 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:beplus/stastics.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 class ManageProducts extends StatefulWidget {
   final String userId;
 
-  ManageProducts({required this.userId});
+  const ManageProducts({Key? key, required this.userId}) : super(key: key);
 
   @override
   _ManageProductsState createState() => _ManageProductsState();
@@ -23,213 +25,205 @@ class _ManageProductsState extends State<ManageProducts> {
   void initState() {
     super.initState();
     categories = FirebaseFirestore.instance.collection('categories');
-    _searchController.addListener(_updateSearchQuery);
-  }
-
-  void _updateSearchQuery() {
-    setState(() {
-      searchQuery = _searchController.text.toLowerCase();
+    _searchController.addListener(() {
+      setState(() {
+        searchQuery = _searchController.text.toLowerCase();
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.teal, // Vibrant app bar color
+        backgroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: true,
         title: isSearching
-            ? TextField(
-          controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'Search categories...',
-            hintStyle: TextStyle(color: Colors.white70),
-            border: InputBorder.none,
+            ? Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
           ),
-          style: const TextStyle(color: Colors.white),
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Search categories...',
+              border: InputBorder.none,
+              prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+              suffixIcon: IconButton(
+                icon: Icon(Icons.clear, color: Colors.grey[600]),
+                onPressed: () {
+                  _searchController.clear();
+                },
+              ),
+            ),
+          ),
         )
-            : const Text(
-          '      Manage Products',
+            : Text(
+          'Manage Products',
           style: TextStyle(
+            color: Colors.black87,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: Colors.white,
           ),
         ),
-        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(
-              isSearching ? Icons.cancel : Icons.search,
-              color: Colors.white, // Set the color to white
-              size: 24.0, // You can adjust the size as needed
+              isSearching ? Icons.close : Icons.search,
+              color: Colors.black54,
             ),
             onPressed: () {
               setState(() {
-                if (isSearching) {
-                  isSearching = false;
+                isSearching = !isSearching;
+                if (!isSearching) {
                   _searchController.clear();
-                  searchQuery = '';
-                } else {
-                  isSearching = true;
                 }
               });
             },
           ),
         ],
+        iconTheme: IconThemeData(color: Colors.black87),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(1.0),
+          child: Container(
+            color: Colors.grey[300],
+            height: 1.0,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20), // Add space between button and list
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: categories.where('userId', isEqualTo: widget.userId).snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('No categories found.'));
-                  }
-
-                  // Filter categories based on the search query
-                  var categoryList = snapshot.data!.docs
-                      .where((category) {
-                    var name = category['name'] ?? '';
-                    return name.toLowerCase().contains(searchQuery);
-                  })
-                      .toList();
-
-                  return ListView.builder(
-                    itemCount: categoryList.length,
-                    itemBuilder: (context, index) {
-                      var category = categoryList[index];
-
-                      // Get image data
-                      final String image = category['image'] ?? '';
-                      ImageProvider? imageProvider;
-
-                      // Check if the image field contains an URL (https://)
-                      if (image.startsWith('https://')) {
-                        // Use NetworkImage if it's an HTTPS URL
-                        imageProvider = NetworkImage(image);
-                      } else {
-                        // Decode Base64 if it's not a URL
-                        final Uint8List? imageBytes = image.isNotEmpty ? base64Decode(image) : null;
-                        if (imageBytes != null) {
-                          imageProvider = MemoryImage(imageBytes);
-                        }
-                      }
-
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15), // Rounded corners
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          height: 180,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 10,
-                                offset: Offset(0, 5),
-                              ),
-                            ],
-                            image: imageProvider != null
-                                ? DecorationImage(
-                              image: imageProvider,
-                              fit: BoxFit.cover,
-                              colorFilter: ColorFilter.mode(
-                                Colors.black.withOpacity(0.4),
-                                BlendMode.darken,
-                              ),
-                            )
-                                : null,
-                          ),
-                          child: Stack(
-                            children: [
-                              if (imageProvider == null)
-                                const Positioned.fill(
-                                  child: Center(
-                                    child: Text(
-                                      'No Image Available',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.black.withOpacity(0.6),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 20,
-                                left: 20,
-                                child: Text(
-                                  category['name'] ?? 'Unnamed',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 26,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
+        child: StreamBuilder<QuerySnapshot>(
+          stream: categories.where('userId', isEqualTo: widget.userId).snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Text(
+                  'No categories found.',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              );
+            }
+            var categoryList = snapshot.data!.docs.where((doc) {
+              final name = doc['name'] ?? '';
+              return name.toString().toLowerCase().contains(searchQuery);
+            }).toList();
+            return GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.85,
               ),
-            ),
-          ],
+              itemCount: categoryList.length,
+              itemBuilder: (context, index) {
+                var category = categoryList[index];
+                final String image = category['image'] ?? '';
+                ImageProvider? imageProvider;
+                if (image.startsWith('https://')) {
+                  imageProvider = NetworkImage(image);
+                } else {
+                  final Uint8List? imageBytes = image.isNotEmpty ? base64Decode(image) : null;
+                  if (imageBytes != null) {
+                    imageProvider = MemoryImage(imageBytes);
+                  }
+                }
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryDetailPage(
+                          categoryName: category['name'] ?? 'Unnamed',
+                          userId: FirebaseAuth.instance.currentUser!.uid,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 4,
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (imageProvider != null)
+                          Image(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                          )
+                        else
+                          Container(color: Colors.grey[300]),
+                        // Gradient overlay for better text readability
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                Colors.black54,
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12,
+                          child: Text(
+                            category['name'] ?? 'Unnamed',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 3,
+                                  color: Colors.black87,
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // Open the dialog for adding a category
           showDialog(
             context: context,
-            builder: (BuildContext context) => AddItemDialog(userId: widget.userId),
+            builder: (context) => AddItemDialog(userId: widget.userId),
           );
         },
-        child: const Icon(
-          Icons.add,
-          size: 30,
-          color: Colors.white, // Set the icon color to white
-        ),
-        backgroundColor: Colors.teal, // Match button color to the theme
-        tooltip: 'Add Category',
+        backgroundColor: Colors.teal[700],
+        icon: Icon(Icons.add, color: Colors.white),
+        label: Text("Add Category", style: TextStyle(color: Colors.white)),
       ),
     );
   }
 }
-
-
 
 class AddItemDialog extends StatelessWidget {
   final String userId;

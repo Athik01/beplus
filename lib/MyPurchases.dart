@@ -30,8 +30,8 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal[50],  // Set the background color to a light teal
       appBar: AppBar(
+        centerTitle: true,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -40,46 +40,105 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
               end: Alignment.bottomRight,
             ),
           ),
-        ), // Set the AppBar to a teal color
+        ),
         title: Text(
-          '            My Purchases',
-          style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold), // White text on the teal background
+          'My Purchases',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            foreground: Paint()
+              ..shader = LinearGradient(
+                colors: [Colors.white, Colors.grey.shade300],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                offset: Offset(0, 2),
+                blurRadius: 3,
+              ),
+            ],
+          ),
         ),
         bottom: TabBar(
           controller: _tabController,
           tabs: [
             Tab(
-              icon: Icon(Icons.production_quantity_limits, color: Colors.white),  // Optional icon for My Products
+              icon: Icon(Icons.production_quantity_limits),
               text: 'My Products',
             ),
             Tab(
-              icon: Icon(Icons.pending_actions, color: Colors.white),  // Optional icon for Pending Orders
+              icon: Icon(Icons.pending_actions),
               text: 'Pending Orders',
             ),
           ],
-          indicatorColor: Colors.white,  // White indicator color
-          indicatorWeight: 3.0,  // Adjust thickness of the indicator
-          labelColor: Colors.white,  // Color for the text of the active tab
-          unselectedLabelColor: Colors.white.withOpacity(0.7),  // Color for the text of the inactive tab
+          indicator: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.white,
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicatorPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          labelColor: Colors.teal,
+          unselectedLabelColor: Colors.white.withOpacity(0.7),
           labelStyle: TextStyle(
-            fontWeight: FontWeight.bold,  // Bold text for the active tab
-            fontSize: 16.0,  // Font size for the active tab
+            fontWeight: FontWeight.bold,
+            fontSize: 16.0,
           ),
           unselectedLabelStyle: TextStyle(
-            fontWeight: FontWeight.normal,  // Normal weight for inactive tabs
-            fontSize: 14.0,  // Font size for inactive tabs
+            fontWeight: FontWeight.normal,
+            fontSize: 14.0,
           ),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildProductList('done'), // My Products tab
-          _buildProductList('Confirmed'), // Pending Orders tab
+          // First Tab: Use a Stack with background image and white fading overlay
+          Stack(
+            children: [
+              // Background image
+              Container(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('lib/assets/myproducts.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              // White fading overlay with multiple stops for gradual fade
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white,                        // full white at the top
+                      Colors.white.withOpacity(0.8),
+                      Colors.white.withOpacity(0.5),
+                      Colors.white.withOpacity(0.0),
+                    ],
+                    stops: [0.0, 0.3, 0.6, 1.0],
+                  ),
+                ),
+              ),
+              // Your product list content
+              _buildProductList('done'),
+            ],
+          ),
+          // Second Tab: Use a simple container with a light teal background
+          Container(
+            color: Colors.teal[50],
+            child: _buildProductList('Confirmed'),
+          ),
         ],
       ),
     );
   }
+
+
+
 
   // Method to build the list of products based on the order status
   Widget _buildProductList(String status) {
@@ -101,39 +160,39 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.shopping_cart_outlined,  // Icon representing empty cart or no orders
-                  size: 80.0,  // Set the icon size
-                  color: Colors.teal[300],  // Soft teal color for the icon
+                  Icons.shopping_cart_outlined,
+                  size: 80.0,
+                  color: Colors.teal[300],
                 ),
-                SizedBox(height: 20),  // Space between icon and text
+                SizedBox(height: 20),
                 Text(
                   'No orders found!',
                   style: TextStyle(
-                    fontSize: 24.0,  // Large font size for visibility
-                    fontWeight: FontWeight.bold,  // Make the text bold
-                    color: Colors.teal[700],  // Teal color for the text
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal[700],
                   ),
                 ),
-                SizedBox(height: 10),  // Space between the message and the button
+                SizedBox(height: 10),
                 Text(
                   'It looks like you don\'t have any orders yet.\nTry browsing our products!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16.0,  // Smaller font size for the subtext
-                    color: Colors.teal[500],  // Lighter teal for the description
+                    fontSize: 16.0,
+                    color: Colors.teal[500],
                   ),
                 ),
-                SizedBox(height: 20),  // Space before the button
+                SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: Text('Browse Products',style: TextStyle(color: Colors.white),),
+                  child: Text('Browse Products', style: TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,  // Button color
-                    padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 12.0),  // Button padding
+                    backgroundColor: Colors.teal,
+                    padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 12.0),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0),  // Rounded button corners
+                      borderRadius: BorderRadius.circular(30.0),
                     ),
                   ),
                 ),
@@ -143,25 +202,20 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
         }
 
         final orders = snapshot.data!.docs;
-        Map<String, Map<int, int>> consolidatedOrders = {}; // Map to hold consolidated data
+        Map<String, Map<int, int>> consolidatedOrders = {}; // Consolidated orders map
 
         // Consolidate orders based on productId and selectedSize
         for (var order in orders) {
-          var productId = order['productId']; // Assuming 'productId' exists
+          var productId = order['productId'];
           var selectedSize = Map<int, int>.from(
-            order['selectedSize']?.map((key, value) => MapEntry(int.parse(key), value)) ??
-                {},
-          ); // Assuming 'selectedSize' is a Map<String, dynamic>
-
-          // For each order, consolidate the selected sizes and quantities
+            order['selectedSize']?.map((key, value) => MapEntry(int.parse(key), value)) ?? {},
+          );
           if (!consolidatedOrders.containsKey(productId)) {
             consolidatedOrders[productId] = selectedSize;
           } else {
-            // If the productId is already in the map, consolidate the sizes and quantities
             selectedSize.forEach((size, quantity) {
               if (consolidatedOrders[productId]!.containsKey(size)) {
-                consolidatedOrders[productId]![size] =
-                    consolidatedOrders[productId]![size]! + quantity;
+                consolidatedOrders[productId]![size] = consolidatedOrders[productId]![size]! + quantity;
               } else {
                 consolidatedOrders[productId]![size] = quantity;
               }
@@ -169,7 +223,6 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
           }
         }
 
-        // List view for displaying the consolidated orders
         return ListView.builder(
           itemCount: consolidatedOrders.keys.length,
           itemBuilder: (context, index) {
@@ -177,10 +230,7 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
             var sizeQuantities = consolidatedOrders[productId]!;
 
             return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('products')
-                  .doc(productId)
-                  .get(),
+              future: FirebaseFirestore.instance.collection('products').doc(productId).get(),
               builder: (context, productSnapshot) {
                 if (productSnapshot.connectionState == ConnectionState.waiting) {
                   return Card(
@@ -203,55 +253,103 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
                 }
 
                 var product = productSnapshot.data!;
-                var imageUrlBase64 = product['imageUrl']; // Assuming 'imageUrl' contains the base64 string
+                var imageUrlBase64 = product['imageUrl'];
                 var productname = product['name'];
-                // Convert the base64 string to a Uint8List
                 var imageBytes = base64Decode(imageUrlBase64);
 
-                // List of size widgets
+                // Build size & quantity widgets
                 List<Widget> sizeWidgets = [];
                 sizeQuantities.forEach((size, quantity) {
                   sizeWidgets.add(
-                    Text('Size: $size, Quantity: $quantity',
-                        style: TextStyle(color: Colors.teal[700])),
+                    Text(
+                      'Size: $size, Quantity: $quantity',
+                      style: TextStyle(color: Colors.teal[700]),
+                    ),
                   );
                 });
 
-                return Card(
-                  color: Colors.teal[100],
-                  margin: EdgeInsets.all(10),
-                  child: ListTile(
-                    leading: Container(
-                      height: 120.0,  // Set the height of the image
-                      width: 90.0,   // Set the width of the image
+                // Animated card with premium design and border
+                return TweenAnimationBuilder(
+                  tween: Tween<double>(begin: 0.95, end: 1.0),
+                  duration: Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale as double,
+                      child: child,
+                    );
+                  },
+                  child: Card(
+                    margin: EdgeInsets.all(10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 8,
+                    shadowColor: Colors.black.withOpacity(0.3),
+                    child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10), // Rounded corners with a 10px radius
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2), // Subtle shadow for depth
-                            spreadRadius: 1,
-                            blurRadius: 5,
-                            offset: Offset(0, 2), // Shadow direction
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),  // Rounded corners inside the image
-                        child: Image.memory(
-                          imageBytes, // Display the image from base64
-                          fit: BoxFit.cover, // Ensure the image scales properly
+                        border: Border.all(
+                          color: Colors.teal.shade300,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.9),
+                            Colors.white.withOpacity(0.7)
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
                       ),
-                    ),
-                    title: Text(
-                      'Name : $productname',
-                      style: TextStyle(color: Colors.teal[800]),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ...sizeWidgets, // Display all consolidated sizes and quantities
-                      ],
+                      child: ListTile(
+                        contentPadding: EdgeInsets.all(12),
+                        leading: Container(
+                          height: 120.0,
+                          width: 90.0,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.teal[200]!, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                spreadRadius: 1,
+                                blurRadius: 6,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.memory(
+                              imageBytes,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          'Name: $productname',
+                          style: TextStyle(
+                            color: Colors.teal[900],
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black12,
+                                blurRadius: 3,
+                                offset: Offset(1, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: sizeWidgets,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 );

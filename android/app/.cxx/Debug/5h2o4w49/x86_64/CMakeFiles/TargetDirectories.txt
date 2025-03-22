@@ -1,0 +1,2 @@
+D:/beplus/android/app/.cxx/Debug/5h2o4w49/x86_64/CMakeFiles/edit_cache.dir
+D:/beplus/android/app/.cxx/Debug/5h2o4w49/x86_64/CMakeFiles/rebuild_cache.dir

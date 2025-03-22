@@ -379,7 +379,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     final result = await SaverGallery.saveImage(
     bytes,
     quality: 100, // Maximum quality for QR code clarity
-    androidRelativePath: "Pictures/QR Codes", name: 'qrcode_${DateTime.now().millisecondsSinceEpoch}.png', androidExistNotSave: false,
+    androidRelativePath: "Pictures/QR Codes", fileName: 'qrcode_${DateTime.now().millisecondsSinceEpoch}.png', skipIfExists: false,
     );
 
     if (result.isSuccess) {

@@ -98,13 +98,13 @@ class _ManagePartiesState extends State<ManageParties>
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xff282828), Color(0xffF5F5F5)],
+                  colors: [Color(0xff004d40), Color(0xff008080), Color(0xffF5F5F5)], // Dark teal → Teal → Light gray
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16.0),
               ),
-              padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -210,106 +210,98 @@ class _ManagePartiesState extends State<ManageParties>
       },
     );
   }
+  Widget _buildTab({required IconData icon, required String label}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20, color: Colors.teal.shade300),
+          SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.teal.shade300,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '       Manage Parties',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: Colors.white
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Manage Parties',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  color: Colors.white,
+                  letterSpacing: 0.5, // Better text spacing
+                ),
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.refresh, color: Colors.white),
-              onPressed: () {
-                _fetchRequests();
-              },
-            ),
-          ],
+              IconButton(
+                icon: Icon(Icons.refresh, color: Colors.white, size: 28), // Slightly larger icon
+                onPressed: _fetchRequests,
+                splashRadius: 24, // Better touch target
+              ),
+            ],
+          ),
         ),
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal, Colors.teal.shade300], // Colors in a list
+              colors: [Colors.teal.shade700, Colors.teal.shade400],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16.0),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+            ),
           ),
         ),
         bottom: TabBar(
           controller: _tabController,
           indicator: BoxDecoration(
-            color: Colors.white, // Bright color for selected tab background
-            borderRadius: BorderRadius.circular(0), // Rounded edges for the active tab
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12), // Rounded edges for active tab
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-          indicatorColor: Colors.black, // Indicator color (selected tab background)
+          indicatorColor: Colors.transparent, // Hide default indicator
           indicatorSize: TabBarIndicatorSize.tab,
-          labelColor: Colors.black, // Text color for selected tab
-          unselectedLabelColor: Colors.white, // Text color for unselected tab
-          unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w400), // Lighter font for unselected tab
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.white.withOpacity(0.8),
           labelStyle: TextStyle(
             fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+          unselectedLabelStyle: TextStyle(
+            fontWeight: FontWeight.w400,
             fontSize: 14,
           ),
           tabs: [
-            Tab(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8), // Adjusted padding
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0),
-                    width: 2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.list_alt, size: 20, color: Colors.teal),
-                    SizedBox(width: 8), // Reduced width
-                    Text(
-                      'New Requests',
-                      style: TextStyle(fontSize: 14, color: Colors.teal, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Tab(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8), // Adjusted padding
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0),
-                    width: 2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.people_alt, size: 20, color: Colors.teal),
-                    SizedBox(width: 8), // Reduced width
-                    Text(
-                      'Customers',
-                      style: TextStyle(fontSize: 14, color: Colors.teal, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildTab(icon: Icons.list_alt, label: 'New Requests'),
+            _buildTab(icon: Icons.people_alt, label: 'Customers'),
           ],
         ),
-        elevation: 10,
-        shadowColor: Colors.grey.withOpacity(0.5),
+        elevation: 6,
+        shadowColor: Colors.black.withOpacity(0.2),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -392,7 +384,6 @@ class _ManagePartiesState extends State<ManageParties>
       ),
     );
   }
-
 
   @override
   void dispose() {

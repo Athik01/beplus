@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:async'; // For Timer
+import 'dart:async';
 
 class BuildCarousel extends StatefulWidget {
   @override
@@ -15,19 +15,24 @@ class _BuildCarouselState extends State<BuildCarousel> {
     'lib/assets/5.png',
   ];
 
-  final PageController _pageController = PageController();
+  final PageController _pageController = PageController(
+    viewportFraction: 0.85, // Shows a glimpse of adjacent images
+  );
+
+  Timer? _carouselTimer;
 
   @override
   void initState() {
     super.initState();
 
-    // Start the timer to change images every 2 seconds
-    Timer.periodic(Duration(seconds: 2), (timer) {
+    // Automatically switch images every 4 seconds.
+    _carouselTimer = Timer.periodic(Duration(seconds: 4), (timer) {
       if (_pageController.hasClients) {
+        int nextPage = (_currentIndex + 1) % _imageList.length;
         _pageController.animateToPage(
-          (_currentIndex + 1) % _imageList.length,
-          duration: Duration(milliseconds: 600), // Smooth transition
-          curve: Curves.easeInOut, // Smooth curve
+          nextPage,
+          duration: Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
         );
       }
     });
@@ -35,25 +40,30 @@ class _BuildCarouselState extends State<BuildCarousel> {
 
   @override
   void dispose() {
+    _carouselTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
+  List<Widget> _buildPageIndicator() {
+    return List.generate(_imageList.length, (i) {
+      return AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        margin: EdgeInsets.symmetric(horizontal: 4),
+        width: _currentIndex == i ? 16 : 8,
+        height: 8,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          color: _currentIndex == i ? Colors.teal : Colors.white70,
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 200, // Set the height for the carousel
-      width: double.infinity, // Make it full width
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8), // Rounded corners
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: 250, // Increased height for a more impactful display
       child: Stack(
         children: [
           PageView.builder(
@@ -65,17 +75,65 @@ class _BuildCarouselState extends State<BuildCarousel> {
               });
             },
             itemBuilder: (context, index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(8), // Rounded images
-                child: Image.asset(
-                  _imageList[index],
-                  fit: BoxFit.cover, // Make sure images cover the container
+              return AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, child) {
+                  double value = 1.0;
+                  if (_pageController.position.haveDimensions) {
+                    value = _pageController.page! - index;
+                    value = (1 - (value.abs() * 0.2)).clamp(0.8, 1.0);
+                  }
+                  return Center(
+                    child: SizedBox(
+                      height: Curves.easeOut.transform(value) * 250,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          _imageList[index],
+                          fit: BoxFit.cover,
+                        ),
+                        // Subtle gradient overlay for a premium look.
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.black.withOpacity(0.3),
+                                Colors.transparent,
+                              ],
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
             },
           ),
+          // Positioned page indicators at the bottom center.
           Positioned(
-            bottom: 10,
+            bottom: 16,
             left: 0,
             right: 0,
             child: Row(
@@ -86,23 +144,5 @@ class _BuildCarouselState extends State<BuildCarousel> {
         ],
       ),
     );
-  }
-
-  List<Widget> _buildPageIndicator() {
-    List<Widget> indicators = [];
-    for (int i = 0; i < _imageList.length; i++) {
-      indicators.add(
-        Container(
-          width: 8,
-          height: 8,
-          margin: EdgeInsets.symmetric(horizontal: 6),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _currentIndex == i ? Colors.tealAccent : Colors.grey,
-          ),
-        ),
-      );
-    }
-    return indicators;
   }
 }
