@@ -76,84 +76,88 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: const Text(
           'Profile',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 25,
-            color: Colors.white, // Set title font color to white
+            color: Colors.black,
           ),
         ),
-        centerTitle: true, // This centers the title
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade800, Colors.teal.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          // Background image
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back2.png',
+              fit: BoxFit.cover,
             ),
           ),
-        ), // Set background color to black
-      ),
-      body:
-    Container(
-    decoration: BoxDecoration(
-    gradient: LinearGradient(
-    colors: [Colors.teal.shade100, Colors.teal.shade800],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    ),
-    ),child:userData == null
-          ? Center(child: CircularProgressIndicator()) // Show loading while data is being fetched
-          : Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Profile Image Section
-              _buildProfileImage(userData?['photoURL']),
-              SizedBox(height: 20),
-
-              // Name Section
-              _buildUserInfoSection('Name', userData?['name'], Icons.person, 'name'),
-              SizedBox(height: 20),
-
-              _buildUserInfoSection('Shop Name', userData?['shopName'], Icons.shop_2_outlined, 'shopName'),
-              SizedBox(height: 20),
-
-              // Email Section
-              _buildUserInfoSection('Email', userData?['email'], Icons.email, 'email'),
-              SizedBox(height: 20),
-
-              // Mobile Section
-              _buildUserInfoSection('Phone', userData?['mobile'], Icons.phone, 'mobile'),
-              SizedBox(height: 20),
-
-              // Account Type Section
-              _buildUserInfoSection('Account Type', userData?['userType'], Icons.account_circle, 'userType'),
-              SizedBox(height: 20),
-
-              // State Section
-              _buildUserInfoSection('State', userData?['state'], Icons.location_on, 'state'),
-              SizedBox(height: 20),
-
-              // Address Section
-              _buildUserInfoSection('Address', userData?['address'], Icons.home, 'address'),
-              SizedBox(height: 20),
-
-              // GST Number Section
-              _buildUserInfoSection('GST Number', userData?['gstNumber'], Icons.business, 'gstNumber'),
-              SizedBox(height: 20),
-
-              // Save/Cancel Buttons
-              _buildSaveCancelButtons(),
-            ],
+          // Fading effect overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.3),
+                    Colors.white.withOpacity(0.7),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          // Profile content wrapped in SafeArea to avoid overlapping the AppBar
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Profile Image Section
+                    _buildProfileImage(userData?['photoURL']),
+                    SizedBox(height: 20),
+                    // Name Section
+                    _buildUserInfoSection('Name', userData?['name'], Icons.person, 'name'),
+                    SizedBox(height: 20),
+                    _buildUserInfoSection('Shop Name', userData?['shopName'], Icons.shop_2_outlined, 'shopName'),
+                    SizedBox(height: 20),
+                    // Email Section
+                    _buildUserInfoSection('Email', userData?['email'], Icons.email, 'email'),
+                    SizedBox(height: 20),
+                    // Mobile Section
+                    _buildUserInfoSection('Phone', userData?['mobile'], Icons.phone, 'mobile'),
+                    SizedBox(height: 20),
+                    // Account Type Section
+                    _buildUserInfoSection('Account Type', userData?['userType'], Icons.account_circle, 'userType'),
+                    SizedBox(height: 20),
+                    // State Section
+                    _buildUserInfoSection('State', userData?['state'], Icons.location_on, 'state'),
+                    SizedBox(height: 20),
+                    // Address Section
+                    _buildUserInfoSection('Address', userData?['address'], Icons.home, 'address'),
+                    SizedBox(height: 20),
+                    // GST Number Section
+                    _buildUserInfoSection('GST Number', userData?['gstNumber'], Icons.business, 'gstNumber'),
+                    SizedBox(height: 20),
+                    // Save/Cancel Buttons
+                    _buildSaveCancelButtons(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-    ),
     );
   }
 

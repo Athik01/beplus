@@ -15,6 +15,8 @@ import 'package:beplus/manage_parties.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:ui';
 import 'ManageStatements.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 class HomePage2 extends StatefulWidget {
   final User? user;
   HomePage2({Key? key, this.user}) : super(key: key);
@@ -56,81 +58,6 @@ class _HomePage2State extends State<HomePage2> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _username != null ? 'Welcome, $_username' : 'Loading...',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      extendBodyBehindAppBar: true,
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.teal.shade700, Colors.teal.shade400],
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'JK',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 70,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Since 1970',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            ListTile(
-              leading: Icon(Icons.person, color: Colors.teal),
-              title: Text('Profile'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfilePage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.exit_to_app, color: Colors.red),
-              title: Text(
-                'Logout',
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: () async {
-                try {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginApp()),
-                  );
-                } catch (e) {
-                  print("Error during logout: $e");
-                }
-              },
-            ),
-          ],
-        ),
-      ),
       body: MainScreen(),
       );
   }
@@ -159,19 +86,6 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 4,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade800, Colors.teal.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        toolbarHeight: 5,
-      ),
       body: _pages[_currentIndex],
       bottomNavigationBar: Stack(
         clipBehavior: Clip.none,
@@ -179,11 +93,11 @@ class _MainScreenState extends State<MainScreen> {
           Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.96),
+              color: Colors.blueGrey.withOpacity(0.96),
               borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.white.withOpacity(0.5),
                   blurRadius: 10,
                   spreadRadius: 2,
                   offset: Offset(0, -3),
@@ -253,7 +167,7 @@ class _MainScreenState extends State<MainScreen> {
                 child: Icon(
                   MdiIcons.plusCircle,
                   size: 40,
-                  color: Colors.teal,
+                  color: Colors.black,
                 ),
               ),
             ),
@@ -264,7 +178,26 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// Placeholder Widgets for Pages
+// Custom clipper to create a curved bottom for the AppBar
+class AppBarClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 30);
+    path.quadraticBezierTo(
+      size.width / 2,
+      size.height,
+      size.width,
+      size.height - 30,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
 
 class HomeScreen extends StatelessWidget {
   final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -272,235 +205,401 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal.shade50, // Soft background
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.white,
+      // Custom curved AppBar with premium gradient background
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(100),
+        child: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          flexibleSpace: ClipPath(
+            clipper: AppBarClipper(),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.blueGrey.shade800,
+                    Colors.blueGrey.shade600,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+          title: Text(
+            'WholeSellers! :)',
+            style: GoogleFonts.montserrat(
+              textStyle: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          centerTitle: true,
+        ),
+      ),
       body: Stack(
         children: [
-          // Gradient Background
+      Container(
+        decoration: BoxDecoration(
+        gradient: LinearGradient(
+        colors: [
+        Colors.white,
+        Colors.blueGrey.shade50,
+        ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      ),
+      image: DecorationImage(
+        image: AssetImage('lib/assets/back.png'),
+        fit: BoxFit.cover,
+        colorFilter: ColorFilter.mode(
+          Colors.white.withOpacity(0.1), // Light white faded effect
+          BlendMode.dstATop,
+        ),
+      ),
+    ),
+    ),
+
+    // Decorative elements for extra depth
           Positioned(
-            top: -100,
-            left: -80,
+            top: -60,
+            left: -60,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 180,
+              height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.teal.shade100, Colors.teal.shade700],
-                  radius: 1.3,
+                  colors: [
+                    Colors.blueGrey.shade100,
+                    Colors.transparent,
+                  ],
+                  radius: 0.8,
                 ),
               ),
             ),
           ),
-
           Positioned(
-            bottom: -150,
-            right: -100,
+            bottom: -80,
+            right: -80,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 240,
+              height: 240,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.teal.shade100, Colors.teal.shade700],
-                  radius: 1.3,
+                  colors: [
+                    Colors.blueGrey.shade100,
+                    Colors.transparent,
+                  ],
+                  radius: 0.8,
                 ),
               ),
             ),
           ),
-
-          // Main Content
-          Column(
-            children: [
-              SizedBox(height: 20),
-
-              // Dashboard Title with Divider
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Text(
-                      "Dashboard",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Expanded(
-                      child: Divider(
-                        thickness: 1,
-                        color: Colors.teal.shade300,
-                        indent: 10,
-                      ),
-                    ),
-                  ],
-                ),
+          // Main content area
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Greeting section with user's name and profile photo
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return premiumGreeting("Hey, Loading...", null,context);
+                      }
+                      if (snapshot.hasError) {
+                        return premiumGreeting("Hey, User", null,context);
+                      }
+                      final userData = snapshot.data;
+                      String name = userData?['name'] ?? 'User';
+                      String photoURL = userData?['photoURL'] ?? '';
+                      return premiumGreeting("Hey, $name", photoURL,context);
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  // Premium cards arranged in a grid-like layout with animations
+    Expanded(
+    child: AnimationLimiter(
+    child: Column(
+    children: [
+    // First row with 2 cards
+    Row(
+    children: [
+    // Card 1
+    Expanded(
+    child: AnimationConfiguration.staggeredList(
+    position: 0,
+    duration: const Duration(milliseconds: 600),
+    child: SlideAnimation(
+    verticalOffset: 50.0,
+    child: FadeInAnimation(
+    child: Container(
+    decoration: BoxDecoration(
+    image: DecorationImage(
+    image: AssetImage('lib/assets/back2.png'),
+    fit: BoxFit.cover,
+    ),
+    borderRadius: BorderRadius.circular(16), // Rounded corners for a clean look
+    ),
+    child: SizedBox(
+    height: 250, // Increased height
+    child: buildStyledCard(
+    context,
+    icon: Icons.inventory_2,
+    iconBgColor: Colors.greenAccent,
+    title: 'Manage Products',
+    subtitle: 'Easily manage your entire product catalog.',
+    onTap: () {
+    if (userId.isNotEmpty) {
+    Navigator.push(
+    context,
+    MaterialPageRoute(
+    builder: (context) =>
+    ManageProducts(userId: userId),
+    ),
+    );
+    } else {
+    print("User not logged in");
+    }
+    },
+    ),
+    ),
+    ),
+    ),
+    ),
+    ),
+    ),
+    const SizedBox(width: 16),
+    // Card 2
+    Expanded(
+    child: AnimationConfiguration.staggeredList(
+    position: 1,
+    duration: const Duration(milliseconds: 600),
+    child: SlideAnimation(
+    verticalOffset: 50.0,
+    child: FadeInAnimation(
+    child: Container(
+    decoration: BoxDecoration(
+    image: DecorationImage(
+    image: AssetImage('lib/assets/back2.png'),
+    fit: BoxFit.cover,
+    ),
+    borderRadius: BorderRadius.circular(16),
+    ),
+    child: SizedBox(
+    height: 250,
+    child: buildStyledCard(
+    context,
+    icon: Icons.groups,
+    iconBgColor: Colors.orangeAccent,
+    title: 'Manage Parties',
+    subtitle: 'Keep track of your business partners.',
+    onTap: () {
+    Navigator.push(
+    context,
+    MaterialPageRoute(
+    builder: (context) =>
+    ManageParties(userId: userId),
+    ),
+    );
+    },
+    ),
+    ),
+    ),
+    ),
+    ),
+    ),
+    ),
+    ],
+    ),
 
-              SizedBox(height: 20),
-
-              // Animated Feature Cards
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.symmetric(horizontal: 15),
-                  children: [
-                    FadeInUp(
-                      duration: Duration(milliseconds: 300),
-                      child: buildGlassCard(
-                        icon: Icons.inventory_2,
-                        title: 'Manage Products',
-                        color: Colors.tealAccent,
-                        onTap: () {
-                          if (userId.isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ManageProducts(userId: userId),
-                              ),
-                            );
-                          } else {
-                            print('User not logged in');
-                          }
-                        },
-                      ),
-                    ),
-                    FadeInUp(
-                      duration: Duration(milliseconds: 400),
-                      child: buildGlassCard(
-                        icon: Icons.groups,
-                        title: 'Manage Parties',
-                        color: Colors.blueAccent,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ManageParties(userId: userId),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    FadeInUp(
-                      duration: Duration(milliseconds: 500),
-                      child: buildGlassCard(
-                        icon: Icons.receipt_long,
-                        title: 'Statements',
-                        color: Colors.orangeAccent,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TallyERP(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+    const SizedBox(height: 16),
+    // Second row with the 3rd card (spanning the width)
+    AnimationConfiguration.staggeredList(
+    position: 2,
+    duration: const Duration(milliseconds: 600),
+    child: SlideAnimation(
+    verticalOffset: 50.0,
+    child: FadeInAnimation(
+    child: Container(
+    decoration: BoxDecoration(
+    image: DecorationImage(
+    image: AssetImage('lib/assets/back2.png'),
+    fit: BoxFit.cover,
+    ),
+    borderRadius: BorderRadius.circular(16),
+    ),
+    child: SizedBox(
+    height: 200,
+    width: double.infinity,
+    child: buildStyledCard(
+    context,
+    icon: Icons.receipt_long,
+    iconBgColor: Colors.blueAccent,
+    title: 'Statements',
+    subtitle: 'Generate and view financial statements instantly.',
+    onTap: () {
+    Navigator.push(
+    context,
+    MaterialPageRoute(
+    builder: (context) => TallyERP(),
+    ),
+    );
+    },
+    ),
+    ),
+    ),
+    ),
+    ),
+    ),
+    ],
+    ),
+    ),
+    ),
+    ],
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
-  Widget buildGlassCard({
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+
+  // Premium greeting widget with custom typography and profile avatar
+  Widget premiumGreeting(String greeting, String? photoURL, BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          greeting,
+          style: GoogleFonts.montserrat(
+            textStyle: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              color: Colors.blueGrey.shade800,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ProfilePage()),
+            );
+          },
+          child: photoURL != null && photoURL.isNotEmpty
+              ? CircleAvatar(
+            radius: 26,
+            backgroundImage: NetworkImage(photoURL),
+          )
+              : CircleAvatar(
+            radius: 26,
+            backgroundColor: Colors.blueGrey.shade200,
+            child: Icon(Icons.person, color: Colors.blueGrey.shade700),
+          ),
+        ),
+      ],
+    );
+  }
+  /// Card styled to match the reference image:
+  /// - Colored circle with icon at top-left
+  /// - Title to the right of icon
+  /// - Subtitle below the title
+  Widget buildStyledCard(
+      BuildContext context, {
+        required IconData icon,
+        required Color iconBgColor,
+        required String title,
+        required String subtitle,
+        required VoidCallback onTap,
+      }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.all(20), // Increased padding for larger card size
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withOpacity(0.15),
-              Colors.white.withOpacity(0.05),
-            ],
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20), // Slightly larger corners
+          border: Border.all(color: Colors.blueGrey.shade50, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.20),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: Offset(4, 4),
+              color: Colors.blueGrey.shade100.withOpacity(0.7),
+              blurRadius: 15,
+              offset: const Offset(4, 4),
+            ),
+            const BoxShadow(
+              color: Colors.white,
+              blurRadius: 15,
+              offset: Offset(-4, -4),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), // Frosted effect
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              padding: EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-              ),
-              child: Row(
-                children: [
-                  // **Glowing Icon**
-                  Container(
-                    padding: EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          color.withOpacity(0.7),
-                          color.withOpacity(0.3),
-                        ],
-                        radius: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withOpacity(0.5), // Neon Glow Effect
-                          blurRadius: 12,
-                          spreadRadius: 3,
-                        ),
-                      ],
-                    ),
-                    child: Icon(icon, size: 28, color: Colors.white),
-                  ),
-                  SizedBox(width: 15),
-
-                  // **Text with a Subtle Glow**
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // **Glowing Forward Arrow**
-                  Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.9), size: 20),
-                ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Align icon to the top right
+            Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 21, // Increased icon size
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
+            const SizedBox(height: 12), // Space between icon and text
+
+            // Title and subtitle text
+            Text(
+              title,
+              style: GoogleFonts.montserrat(
+                textStyle: TextStyle(
+                  fontSize: 16, // Increased font size for title
+                  fontWeight: FontWeight.w700,
+                  color: Colors.blueGrey.shade800,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: GoogleFonts.montserrat(
+                textStyle: TextStyle(
+                  fontSize: 14, // Increased font size for subtitle
+                  fontWeight: FontWeight.w400,
+                  color: Colors.blueGrey.shade600,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+
+
 }
 
 class IconLoadingIndicator extends StatelessWidget {
@@ -558,61 +657,118 @@ class PartiesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _fetchAllData(currentUserId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: IconLoadingIndicator(icon: Icons.account_circle));
-        }
+    return Scaffold(
+      backgroundColor: Colors.blueGrey,
+      appBar: AppBar(
+        title: const Text(
+          'Parties',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 25,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.blueGrey, // White AppBar
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          // SizedBox for spacing after the AppBar
+          const SizedBox(height: 13),
+          Expanded(
+            child: Stack(
+              children: [
+                // Background image
+                Positioned.fill(
+                  child: Image.asset(
+                    'lib/assets/back.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                // White fading overlay
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withOpacity(0.8), // More opaque at top
+                          Colors.white.withOpacity(0.3), // Less opaque at bottom
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Main content from FutureBuilder
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _fetchAllData(currentUserId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: IconLoadingIndicator(icon: Icons.account_circle),
+                      );
+                    }
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'An error occurred: ${snapshot.error}',
-              style: TextStyle(color: Colors.red),
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'An error occurred: ${snapshot.error}',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      );
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No Business Contacts',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(
+                        top: 16,
+                        left: 12,
+                        right: 12,
+                        bottom: 8,
+                      ),
+                      itemCount: snapshot.data!.length,
+                      itemBuilder: (context, index) {
+                        var user = snapshot.data![index];
+                        String customerID = user['customerId'];
+                        String photoURL = user['photoURL'] ?? '';
+                        String name = user['name'] ?? 'Unknown';
+                        String contactNumber = user['mobile'] ?? 'N/A';
+
+                        return _buildCustomerCard(
+                          context,
+                          customerID,
+                          photoURL,
+                          name,
+                          contactNumber,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
-          );
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Text(
-              'No Business Contacts',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.redAccent,
-              ),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          itemCount: snapshot.data!.length,
-          itemBuilder: (context, index) {
-            var user = snapshot.data![index];
-            String customerID = user['customerId'];
-            String photoURL = user['photoURL'] ?? '';
-            String name = user['name'] ?? 'Unknown';
-            String contactNumber = user['mobile'] ?? 'N/A';
-
-            return _buildCustomerCard(
-              context,
-              customerID,
-              photoURL,
-              name,
-              contactNumber,
-            );
-          },
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 
   Future<List<Map<String, dynamic>>> _fetchAllData(String userId) async {
     try {
-      // Fetch requests
       QuerySnapshot requestSnapshot = await FirebaseFirestore.instance
           .collection('requests')
           .where('ownerId', isEqualTo: userId)
@@ -623,7 +779,6 @@ class PartiesScreen extends StatelessWidget {
         return [];
       }
 
-      // Fetch user data for each request
       List<Future<Map<String, dynamic>?>> userFutures = requestSnapshot.docs.map((doc) async {
         String customerId = doc['customerId'];
         DocumentSnapshot userDoc = await FirebaseFirestore.instance
@@ -643,15 +798,13 @@ class PartiesScreen extends StatelessWidget {
         }
       }).toList();
 
-      // Wait for all user data to be fetched
       List<Map<String, dynamic>?> users = await Future.wait(userFutures);
-
-      // Filter out any null results
       return users.where((user) => user != null).cast<Map<String, dynamic>>().toList();
     } catch (e) {
       throw Exception('Failed to fetch data: $e');
     }
   }
+
 
   Widget _buildCustomerCard(
       BuildContext context,
@@ -677,68 +830,75 @@ class PartiesScreen extends StatelessWidget {
         color: Colors.transparent,
         shadowColor: Colors.black.withOpacity(0.2),
         child: Container(
+          // Outer container with the asset image as a border-like background
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade200, Colors.teal.shade800],
-              begin: Alignment.bottomRight,
-              end: Alignment.topLeft,
-            ),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 6,
-                offset: Offset(3, 3),
-                color: Colors.black.withOpacity(0.2),
-              ),
-            ],
+            image: const DecorationImage(
+              image: AssetImage('lib/assets/back2.png'),
+              fit: BoxFit.cover,
+            ),
           ),
+          // Padding to create the border effect
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: photoURL.isNotEmpty
-                      ? NetworkImage(photoURL)
-                      : AssetImage('assets/default_avatar.png') as ImageProvider,
-                  backgroundColor: Colors.white,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.phone, color: Colors.white, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            contactNumber,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white,
+            padding: const EdgeInsets.all(4.0), // Adjust thickness of the "border" here
+            child: Container(
+              // Inner container with white background for content
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundImage: photoURL.isNotEmpty
+                        ? NetworkImage(photoURL)
+                        : const AssetImage('assets/default_avatar.png')
+                    as ImageProvider,
+                    backgroundColor: Colors.white,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.montserrat(
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.phone, color: Colors.black, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              contactNumber,
+                              style: GoogleFonts.montserrat(
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ],
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.black,
+                    size: 18,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
