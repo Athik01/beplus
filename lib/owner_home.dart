@@ -615,7 +615,7 @@ class IconLoadingIndicator extends StatelessWidget {
     this.size = 50.0,
     required this.icon,
     this.iconSize = 24.0,
-    this.color = Colors.teal,
+    this.color = Colors.black,
     this.loadingText = 'Loading...',
     this.textStyle,
   }) : super(key: key);
@@ -660,22 +660,28 @@ class PartiesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.blueGrey,
       appBar: AppBar(
-        title: const Text(
-          'Parties',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 25,
-            color: Colors.white,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'My Parties!',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                fontSize: 25,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueGrey, // White AppBar
+        backgroundColor: Colors.blueGrey,
         elevation: 0,
       ),
       body: Column(
         children: [
           // SizedBox for spacing after the AppBar
-          const SizedBox(height: 13),
           Expanded(
             child: Stack(
               children: [
@@ -928,150 +934,210 @@ class ProductsScreen extends StatelessWidget {
       }
     });
 
-    return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('products')
-          .where('userId', isEqualTo: userId) // Match userId in products collection
-          .get(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          // Display a loading indicator while waiting for data
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-            ),
-          );
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+    return Container(
+      // Background image for the entire page
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('lib/assets/back2.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      // White fading effect overlay
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withOpacity(0.9), // More white at the top
+              Colors.white.withOpacity(0.6), // Fades to transparent at the bottom
+            ],
+          ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.blueGrey,
+            centerTitle: true,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.production_quantity_limits, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Products',
+                  style: GoogleFonts.montserrat(
+                    textStyle: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
+              ],
             ),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          // Handle empty state if no products are found
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'No products available.',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        } else {
-          // Display products in a ListView
-          var products = snapshot.data!.docs;
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              var product = products[index].data() as Map<String, dynamic>;
-              Uint8List? imageBytes;
-              String productId = products[index].id;
-              // Check if imageUrl is present and decode it
-              if (product['imageUrl'] != null && product['imageUrl'] is String) {
-                try {
-                  imageBytes = base64Decode(product['imageUrl']);
-                } catch (e) {
-                  // Handle any base64 decoding error gracefully
-                  imageBytes = null;
-                }
-              }
-
-              return Card(
-                margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(15),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetails(productId:productId),
+          ),
+          body: FutureBuilder<QuerySnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('products')
+                .where('userId', isEqualTo: userId)
+                .get(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  ),
+                );
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: GoogleFonts.montserrat(
+                        textStyle: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'No products available.',
+                      style: GoogleFonts.montserrat(
+                        textStyle: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              } else {
+                // Display products in a ListView
+                var products = snapshot.data!.docs;
+                return ListView.builder(
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    var product = products[index].data() as Map<String, dynamic>;
+                    Uint8List? imageBytes;
+                    String productId = products[index].id;
+                    // Check if imageUrl is present and decode it
+                    if (product['imageUrl'] != null && product['imageUrl'] is String) {
+                      try {
+                        imageBytes = base64Decode(product['imageUrl']);
+                      } catch (e) {
+                        imageBytes = null;
+                      }
+                    }
+                    // Wrap the Card with a Container that uses the asset as a border image.
+                    return Container(
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('lib/assets/back2.png'),
+                          fit: BoxFit.fill,
+                        ),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      padding: EdgeInsets.all(8), // adjust for border width
+                      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                      child: Card(
+                        margin: EdgeInsets.zero,
+                        elevation: 8,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(15),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetails(productId: productId),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+                                child: imageBytes != null
+                                    ? Image.memory(
+                                  imageBytes,
+                                  width: double.infinity,
+                                  height: 180,
+                                  fit: BoxFit.cover,
+                                )
+                                    : Container(
+                                  color: Colors.grey[300],
+                                  height: 180,
+                                  width: double.infinity,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.image,
+                                      color: Colors.grey[600],
+                                      size: 60,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        product['name'] ?? 'No Name',
+                                        style: GoogleFonts.montserrat(
+                                          textStyle: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                                child: Text(
+                                  'Tap for details',
+                                  style: GoogleFonts.montserrat(
+                                    textStyle: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.blue[600],
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },
-                  child: Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-                        child: imageBytes != null
-                            ? Image.memory(
-                          imageBytes,
-                          width: double.infinity,
-                          height: 180,
-                          fit: BoxFit.cover,
-                        )
-                            : Container(
-                          color: Colors.grey[300],
-                          height: 180,
-                          width: double.infinity,
-                          child: Center(
-                            child: Icon(
-                              Icons.image,
-                              color: Colors.grey[600],
-                              size: 60,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                product['name'] ?? 'No Name',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                        child: Text(
-                          'Tap for details',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.blue[600],
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+                );
+              }
             },
-          );
-        }
-      },
+          ),
+        ),
+      ),
     );
   }
 }
