@@ -1149,79 +1149,141 @@ class BillsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('orders').snapshots(),
-        builder: (context, ordersSnapshot) {
-          if (ordersSnapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingScreen();
-          }
+      // Blue-grey AppBar with Montserrat font
+      appBar: AppBar(
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.dashboard, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'My Bills!',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                color: Colors.white
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.blueGrey,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
 
-          if (!ordersSnapshot.hasData || ordersSnapshot.data!.docs.isEmpty) {
-            return _buildEmptyState();
-          }
+        body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/assets/back.png'),
+            fit: BoxFit.cover,
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withOpacity(0.9),
+              Colors.white.withOpacity(0.0),
+            ],
+          ),
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('orders').snapshots(),
+          builder: (context, ordersSnapshot) {
+            if (ordersSnapshot.connectionState == ConnectionState.waiting) {
+              return _buildLoadingScreen();
+            }
 
-          var orders = ordersSnapshot.data!.docs;
+            if (!ordersSnapshot.hasData || ordersSnapshot.data!.docs.isEmpty) {
+              return _buildEmptyState();
+            }
 
-          return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
-            future: _fetchMatchingOrders(orders, currentUserId, context),
-            builder: (context, matchingOrdersSnapshot) {
-              if (matchingOrdersSnapshot.connectionState == ConnectionState.waiting) {
-                return _buildLoadingScreen();
-              }
+            var orders = ordersSnapshot.data!.docs;
 
-              if (!matchingOrdersSnapshot.hasData || matchingOrdersSnapshot.data!.isEmpty) {
-                return _buildEmptyState(message: 'No matching orders found for the current user.');
-              }
+            return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
+              future: _fetchMatchingOrders(orders, currentUserId, context),
+              builder: (context, matchingOrdersSnapshot) {
+                if (matchingOrdersSnapshot.connectionState == ConnectionState.waiting) {
+                  return _buildLoadingScreen();
+                }
 
-              return _buildOrderList(matchingOrdersSnapshot.data!);
-            },
-          );
-        },
+                if (!matchingOrdersSnapshot.hasData || matchingOrdersSnapshot.data!.isEmpty) {
+                  return _buildEmptyState(
+                    message: 'No matching orders found for the current user.',
+                  );
+                }
+
+                return _buildOrderList(matchingOrdersSnapshot.data!);
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildLoadingScreen() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.teal.shade100, Colors.teal.shade300],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Stack(
+      children: [
+        // This container represents the underlying screen content.
+        // Remove or replace if the background is provided elsewhere.
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+        ),
+        // Full-screen blur overlay.
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.white.withOpacity(0.0),
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Animated loading icon with a circular progress bar
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Colors.teal),
-              strokeWidth: 4.0, // Make the progress bar thicker for a better look
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Loading...',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+        // Centered loading container with glass effect.
+        Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 250,
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(Colors.black),
+                    strokeWidth: 4.0,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Loading...',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Please wait while we fetch your data.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      color: Colors.black.withOpacity(0.8),
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 10),
-            Text(
-              'Please wait while we fetch your data.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.7), // Light grey color for subtler text
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -1229,7 +1291,7 @@ class BillsScreen extends StatelessWidget {
     return Center(
       child: Text(
         message,
-        style: TextStyle(
+        style: GoogleFonts.montserrat(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.grey,
@@ -1246,30 +1308,50 @@ class BillsScreen extends StatelessWidget {
         String userId = userOrdersMap.keys.elementAt(index);
         List<Map<String, dynamic>> userOrders = userOrdersMap[userId]!;
         String name = userOrders[0]['name'];
-        String photoURL = userOrders[0]['photoURL'] ?? 'https://www.w3schools.com/howto/img_avatar.png';
-        return Card(
+        String photoURL = userOrders[0]['photoURL'] ??
+            'https://www.w3schools.com/howto/img_avatar.png';
+
+        // Wrap each card in a container to apply an image border using lib/assets/back2.png
+        return Container(
           margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
+          padding: EdgeInsets.all(4.0), // adjust this value for border thickness
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('lib/assets/back2.png'),
+              fit: BoxFit.fill,
+            ),
             borderRadius: BorderRadius.circular(15),
           ),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundImage: NetworkImage(photoURL),
-              radius: 30,
+          child: Card(
+            margin: EdgeInsets.zero, // remove default margin inside the border container
+            elevation: 5,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
             ),
-            title: Text(
-              'Name: $name',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundImage: NetworkImage(photoURL),
+                radius: 30,
+              ),
+              title: Text(
+                'Name: $name',
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                'View bills!',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  color: Colors.blue,
+                ),
+              ),
+              trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue),
+              onTap: () {
+                _showOrderIdsScreen(context, userId, userOrders);
+              },
             ),
-            subtitle: Text(
-              'View bills!',
-              style: TextStyle(fontSize: 14, color: Colors.blue),
-            ),
-            trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue),
-            onTap: () {
-              _showOrderIdsScreen(context, userId, userOrders);
-            },
           ),
         );
       },
@@ -1277,34 +1359,41 @@ class BillsScreen extends StatelessWidget {
   }
 
   void _showOrderIdsScreen(BuildContext context, String userId, List<Map<String, dynamic>> orders) {
-    String ownerId = FirebaseAuth.instance.currentUser!.uid; // The current user as the customer
+    String ownerId = FirebaseAuth.instance.currentUser!.uid;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ViewBills(
           customerId: userId,
-          ownerId: ownerId, // Passing the userId as ownerId
+          ownerId: ownerId,
         ),
       ),
     );
   }
 
   Future<Map<String, List<Map<String, dynamic>>>> _fetchMatchingOrders(
-      List<QueryDocumentSnapshot> orders, String currentUserId, BuildContext context) async {
+      List<QueryDocumentSnapshot> orders,
+      String currentUserId,
+      BuildContext context,
+      ) async {
     Map<String, List<Map<String, dynamic>>> userOrdersMap = {};
 
     for (var order in orders) {
       String productId = order['productId'];
-      DocumentSnapshot productDoc = await FirebaseFirestore.instance.collection('products').doc(productId).get();
+      DocumentSnapshot productDoc = await FirebaseFirestore.instance
+          .collection('products')
+          .doc(productId)
+          .get();
 
       if (productDoc.exists) {
         String productUserId = productDoc['userId'];
         if (productUserId == currentUserId) {
-          // Group orders by userId and fetch user information
           String orderUserId = order['userId'];
 
-          // Fetch user data from the 'users' collection
-          DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(orderUserId).get();
+          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(orderUserId)
+              .get();
           if (userDoc.exists) {
             String name = userDoc['name'] ?? 'Unknown';
             String photoURL = userDoc['photoURL'];
@@ -1337,136 +1426,228 @@ class BalanceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('orders').snapshots(),
-        builder: (context, ordersSnapshot) {
-          if (ordersSnapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingScreen(); // Show loading indicator
-          }
-
-          if (!ordersSnapshot.hasData || ordersSnapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Text(
-                'No orders found.',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
+      // Blue-grey AppBar with Montserrat-styled title
+      appBar: AppBar(
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.currency_rupee_sharp, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'Balance',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                color : Colors.white,
               ),
-            );
-          }
+            ),
+          ],
+        ),
+        backgroundColor: Colors.blueGrey,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      // The overall background uses lib/assets/back.png with a white fading effect.
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/assets/back.png'),
+            fit: BoxFit.cover,
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withOpacity(0.9),
+              Colors.white.withOpacity(0.0),
+            ],
+          ),
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('orders').snapshots(),
+          builder: (context, ordersSnapshot) {
+            if (ordersSnapshot.connectionState == ConnectionState.waiting) {
+              return _buildLoadingScreen();
+            }
 
-          var orders = ordersSnapshot.data!.docs;
-          return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
-            future: _fetchMatchingOrders(orders, currentUserId, context),
-            builder: (context, matchingOrdersSnapshot) {
-              if (matchingOrdersSnapshot.connectionState == ConnectionState.waiting) {
-                return _buildLoadingScreen(); // Show loading indicator
-              }
-              if (!matchingOrdersSnapshot.hasData || matchingOrdersSnapshot.data!.isEmpty) {
-                return Center(
-                  child: Text(
-                    'No matching orders found for the current user.',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
+            if (!ordersSnapshot.hasData || ordersSnapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Text(
+                  'No orders found.',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
                   ),
-                );
-              }
-              return ListView.builder(
-                itemCount: matchingOrdersSnapshot.data!.keys.length,
-                itemBuilder: (context, index) {
-                  String userId = matchingOrdersSnapshot.data!.keys.elementAt(index);
-                  List<Map<String, dynamic>> userOrders = matchingOrdersSnapshot.data![userId]!;
+                ),
+              );
+            }
 
-                  // Retrieve user information (name and photoURL)
-                  String name = userOrders[0]['name'];
-                  String photoURL = userOrders[0]['photoURL'] ?? 'https://www.w3schools.com/howto/img_avatar.png';
-                  List<Map<String, dynamic>> activeOrders = userOrders
-                      .where((order) => order['status'] != 'done')
-                      .toList();
-                  return Card(
-                    margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: NetworkImage(photoURL),
-                        radius: 30,
+            var orders = ordersSnapshot.data!.docs;
+            return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
+              future: _fetchMatchingOrders(orders, currentUserId, context),
+              builder: (context, matchingOrdersSnapshot) {
+                if (matchingOrdersSnapshot.connectionState == ConnectionState.waiting) {
+                  return _buildLoadingScreen();
+                }
+                if (!matchingOrdersSnapshot.hasData || matchingOrdersSnapshot.data!.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No matching orders found for the current user.',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
-                      title: Text(
-                        'Name: $name',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        'Total Orders: ${activeOrders.length}',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue),
-                      onTap: () {
-                        _showOrderIdsScreen(context, name, userOrders);
-                      },
                     ),
                   );
-                },
-              );
-            },
-          );
-        },
+                }
+                return ListView.builder(
+                  itemCount: matchingOrdersSnapshot.data!.keys.length,
+                  itemBuilder: (context, index) {
+                    String userId = matchingOrdersSnapshot.data!.keys.elementAt(index);
+                    List<Map<String, dynamic>> userOrders = matchingOrdersSnapshot.data![userId]!;
+
+                    // Retrieve user information (name and photoURL)
+                    String name = userOrders[0]['name'];
+                    String photoURL = userOrders[0]['photoURL'] ??
+                        'https://www.w3schools.com/howto/img_avatar.png';
+                    List<Map<String, dynamic>> activeOrders = userOrders
+                        .where((order) => order['status'] != 'done')
+                        .toList();
+
+                    // Wrap each card in a Container with a background image of lib/assets/back2.png
+                    return Container(
+                      margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                      padding: EdgeInsets.all(4), // Adjust this for desired border thickness
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('lib/assets/back2.png'),
+                          fit: BoxFit.fill,
+                        ),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Card(
+                        elevation: 5,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage(photoURL),
+                            radius: 30,
+                          ),
+                          title: Text(
+                            'Name: $name',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Total Orders: ${activeOrders.length}',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue),
+                          onTap: () {
+                            _showOrderIdsScreen(context, name, userOrders);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildLoadingScreen() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.teal.shade100, Colors.teal.shade300],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Stack(
+      children: [
+        // Underlying content container (if needed)
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+        ),
+        // Full-screen blur overlay
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.white.withOpacity(0.0),
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Animated loading icon with a circular progress bar
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Colors.teal),
-              strokeWidth: 4.0, // Make the progress bar thicker for a better look
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Loading...',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+        // Centered loading container with glass effect
+        Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 250,
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(Colors.black),
+                    strokeWidth: 4.0,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Loading...',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Please wait while we fetch your data.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      color: Colors.black.withOpacity(0.8),
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 10),
-            Text(
-              'Please wait while we fetch your data.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.7), // Light grey color for subtler text
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
-
-
   Future<Map<String, List<Map<String, dynamic>>>> _fetchMatchingOrders(
-      List<QueryDocumentSnapshot> orders, String currentUserId, BuildContext context) async {
+      List<QueryDocumentSnapshot> orders,
+      String currentUserId,
+      BuildContext context,
+      ) async {
     Map<String, List<Map<String, dynamic>>> userOrdersMap = {};
 
     for (var order in orders) {
       String productId = order['productId'];
-      DocumentSnapshot productDoc = await FirebaseFirestore.instance.collection('products').doc(productId).get();
+      DocumentSnapshot productDoc = await FirebaseFirestore.instance
+          .collection('products')
+          .doc(productId)
+          .get();
 
       if (productDoc.exists) {
         String productUserId = productDoc['userId'];
@@ -1475,7 +1656,10 @@ class BalanceScreen extends StatelessWidget {
           String orderUserId = order['userId'];
 
           // Fetch user data from the 'users' collection
-          DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(orderUserId).get();
+          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(orderUserId)
+              .get();
           if (userDoc.exists) {
             String name = userDoc['name'] ?? 'Unknown';
             String photoURL = userDoc['photoURL'];
@@ -1510,5 +1694,3 @@ class BalanceScreen extends StatelessWidget {
     );
   }
 }
-
-
