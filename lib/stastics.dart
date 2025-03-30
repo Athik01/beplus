@@ -1,7 +1,9 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Model class to store aggregated sales data per product.
 class SalesAnalysis {
@@ -11,6 +13,7 @@ class SalesAnalysis {
   final int likeCount; // Number of users who liked the product.
   int orderCount; // Units sold (billed).
   double totalRevenue; // Total revenue from sold units.
+  final Uint8List? imageData; // Decoded image data from base64 string.
 
   SalesAnalysis({
     required this.productId,
@@ -19,6 +22,7 @@ class SalesAnalysis {
     required this.likeCount,
     this.orderCount = 0,
     this.totalRevenue = 0.0,
+    this.imageData,
   });
 
   /// Calculated unsold quantity based on available inventory and sold units.
@@ -114,6 +118,17 @@ class CategoryDetailPage extends StatelessWidget {
           likeCount = (productData['likes'] as Map).length;
         }
 
+        // Extract and decode the image if available.
+        Uint8List? imageData;
+        if (productData.containsKey('imageUrl') && productData['imageUrl'] is String) {
+          try {
+            imageData = base64Decode(productData['imageUrl']);
+          } catch (e) {
+            print('Error decoding image for product $productId: $e');
+            imageData = null;
+          }
+        }
+
         // Aggregate data per product.
         if (analysisMap.containsKey(productId)) {
           analysisMap[productId]!.orderCount += 1;
@@ -127,6 +142,7 @@ class CategoryDetailPage extends StatelessWidget {
             likeCount: likeCount,
             orderCount: 1,
             totalRevenue: orderAmount,
+            imageData: imageData,
           );
         }
       }
@@ -148,50 +164,60 @@ class CategoryDetailPage extends StatelessWidget {
     double overallConversion =
     totalAvailable > 0 ? (totalOrders / totalAvailable) * 100 : 0;
 
-    return Card(
+    return Container(
       margin: EdgeInsets.all(12),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        child: Column(
-          children: [
-            Text(
-              'Overall Business Summary',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal[700]),
-            ),
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildDashboardMetric(
-                    icon: Icons.shopping_cart,
-                    label: 'Orders',
-                    value: '$totalOrders'),
-                _buildDashboardMetric(
-                    icon: Icons.currency_rupee,
-                    label: 'Revenue',
-                    value: '\₹${totalRevenue.toStringAsFixed(2)}'),
-              ],
-            ),
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildDashboardMetric(
-                    icon: Icons.inventory,
-                    label: 'Available',
-                    value: '$totalAvailable'),
-                _buildDashboardMetric(
-                    icon: Icons.trending_up,
-                    label: 'Conv. Rate',
-                    value: '${overallConversion.toStringAsFixed(1)}%'),
-              ],
-            ),
-          ],
+      padding: EdgeInsets.all(4), // This gives a "border" effect.
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('lib/assets/back2.png'),
+          fit: BoxFit.fill,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          child: Column(
+            children: [
+              Text(
+                'Overall Business Summary',
+                style: GoogleFonts.montserrat(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal[700]),
+              ),
+              SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildDashboardMetric(
+                      icon: Icons.shopping_cart,
+                      label: 'Orders',
+                      value: '$totalOrders'),
+                  _buildDashboardMetric(
+                      icon: Icons.currency_rupee,
+                      label: 'Revenue',
+                      value: '₹${totalRevenue.toStringAsFixed(2)}'),
+                ],
+              ),
+              SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildDashboardMetric(
+                      icon: Icons.inventory,
+                      label: 'Available',
+                      value: '$totalAvailable'),
+                  _buildDashboardMetric(
+                      icon: Icons.trending_up,
+                      label: 'Conv. Rate',
+                      value: '${overallConversion.toStringAsFixed(1)}%'),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -206,9 +232,12 @@ class CategoryDetailPage extends StatelessWidget {
         SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.montserrat(
+              fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+        Text(label,
+            style: GoogleFonts.montserrat(
+                fontSize: 12, color: Colors.grey[700])),
       ],
     );
   }
@@ -216,26 +245,14 @@ class CategoryDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // AppBar with blue-grey background and Montserrat-styled title.
       appBar: AppBar(
+        backgroundColor: Colors.blueGrey,
         elevation: 4,
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade700, Colors.teal.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-          ),
-        ),
         title: Text(
           categoryName,
-          style: TextStyle(
+          style: GoogleFonts.montserrat(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -243,109 +260,179 @@ class CategoryDetailPage extends StatelessWidget {
           ),
         ),
       ),
-        body: FutureBuilder<List<SalesAnalysis>>(
-        future: fetchSalesAnalysis(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-                child: Text('No sales data available for $categoryName'));
-          }
-          List<SalesAnalysis> analysis = snapshot.data!;
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                // Dashboard summary.
-                buildDashboard(analysis),
-                // List of individual product cards.
-                ListView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: analysis.length,
-                  itemBuilder: (context, index) {
-                    final item = analysis[index];
-                    return Card(
-                      margin:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.productName,
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.teal[800]),
-                            ),
-                            Divider(),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildMetricTile(
-                                    icon: Icons.shopping_cart,
-                                    label: 'Sold',
-                                    value: '${item.orderCount}'),
-                                _buildMetricTile(
-                                    icon: Icons.inventory,
-                                    label: 'Available',
-                                    value: '${item.availableQuantity}'),
-                                _buildMetricTile(
-                                    icon: Icons.currency_rupee,
-                                    label: 'Revenue',
-                                    value:
-                                    '\₹${item.totalRevenue.toStringAsFixed(2)}'),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildMetricTile(
-                                    icon: Icons.trending_up,
-                                    label: 'Conv. Rate',
-                                    value:
-                                    '${item.conversionRate.toStringAsFixed(1)}%'),
-                                _buildMetricTile(
-                                    icon: Icons.currency_rupee_sharp,
-                                    label: 'Avg Sale',
-                                    value:
-                                    '\₹${item.averageSaleValue.toStringAsFixed(2)}'),
-                                _buildMetricTile(
-                                    icon: Icons.assessment,
-                                    label: 'Potential Rev.',
-                                    value:
-                                    '\₹${item.potentialAdditionalRevenue.toStringAsFixed(2)}'),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(Icons.thumb_up,
-                                    color: Colors.teal[700], size: 20),
-                                SizedBox(width: 4),
-                                Text('${item.likeCount} Likes'),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
+      body: Stack(
+        children: [
+          // Full-screen background image from lib/assets/back.png.
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
             ),
-          );
-        },
+          ),
+          // White fading gradient overlay.
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Main content.
+          FutureBuilder<List<SalesAnalysis>>(
+            future: fetchSalesAnalysis(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(
+                    child: Text('Error: ${snapshot.error}',
+                        style: GoogleFonts.montserrat()));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(
+                    child: Text('No sales data available for $categoryName',
+                        style: GoogleFonts.montserrat(fontSize: 16)));
+              }
+              List<SalesAnalysis> analysis = snapshot.data!;
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Dashboard summary.
+                    buildDashboard(analysis),
+                    // List of individual product cards.
+                    ListView.builder(
+                      physics: NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: analysis.length,
+                      itemBuilder: (context, index) {
+                        final item = analysis[index];
+                        return Container(
+                          margin: EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.all(4), // Border thickness
+                          decoration: BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('lib/assets/back2.png'),
+                              fit: BoxFit.fill,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Display product image if available.
+                                  item.imageData != null
+                                      ? ClipRRect(
+                                    borderRadius:
+                                    BorderRadius.circular(8),
+                                    child: Image.memory(
+                                      item.imageData!,
+                                      height: 150,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                      : Container(
+                                    height: 150,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius:
+                                      BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(Icons.image,
+                                        size: 50,
+                                        color: Colors.grey[700]),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    item.productName,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.teal[800],
+                                    ),
+                                  ),
+                                  Divider(),
+                                  Row(
+                                    mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      _buildMetricTile(
+                                          icon: Icons.shopping_cart,
+                                          label: 'Sold',
+                                          value: '${item.orderCount}'),
+                                      _buildMetricTile(
+                                          icon: Icons.inventory,
+                                          label: 'Available',
+                                          value:
+                                          '${item.availableQuantity}'),
+                                      _buildMetricTile(
+                                          icon: Icons.currency_rupee,
+                                          label: 'Revenue',
+                                          value:
+                                          '₹${item.totalRevenue.toStringAsFixed(2)}'),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      _buildMetricTile(
+                                          icon: Icons.trending_up,
+                                          label: 'Conv. Rate',
+                                          value:
+                                          '${item.conversionRate.toStringAsFixed(1)}%'),
+                                      _buildMetricTile(
+                                          icon: Icons.currency_rupee_sharp,
+                                          label: 'Avg Sale',
+                                          value:
+                                          '₹${item.averageSaleValue.toStringAsFixed(2)}'),
+                                      _buildMetricTile(
+                                          icon: Icons.assessment,
+                                          label: 'Potential Rev.',
+                                          value:
+                                          '₹${item.potentialAdditionalRevenue.toStringAsFixed(2)}'),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.thumb_up,
+                                          color: Colors.teal[700], size: 20),
+                                      SizedBox(width: 4),
+                                      Text('${item.likeCount} Likes',
+                                          style: GoogleFonts.montserrat()),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -361,9 +448,11 @@ class CategoryDetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(value,
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                     fontWeight: FontWeight.bold, color: Colors.teal[800])),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+            Text(label,
+                style: GoogleFonts.montserrat(
+                    fontSize: 10, color: Colors.grey[600])),
           ],
         )
       ],

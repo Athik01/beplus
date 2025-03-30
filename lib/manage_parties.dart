@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:ui';
 class ManageParties extends StatefulWidget {
   final String userId;
 
@@ -63,146 +64,153 @@ class _ManagePartiesState extends State<ManageParties>
     }
   }
 
-  Widget _buildRequestCard(
-      DocumentSnapshot request, bool showAcceptButton) {
+  Widget _buildRequestCard(DocumentSnapshot request, bool showAcceptButton) {
     String customerId = request['customerId'] ?? 'Unknown';
 
     return FutureBuilder<Map<String, String>>(
       future: _fetchUserDetails(customerId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
+          return Center(child: CircularProgressIndicator());
         }
-
         if (snapshot.hasError) {
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
               'Error fetching user details',
-              style: TextStyle(fontSize: 18, color: Colors.red),
+              style: GoogleFonts.montserrat(fontSize: 18, color: Colors.red),
             ),
           );
         }
-
         var userDetails = snapshot.data;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-          child: Card(
-            elevation: 8.0,
-            shape: RoundedRectangleBorder(
+          child: Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('lib/assets/back2.png'),
+                fit: BoxFit.fill,
+              ),
               borderRadius: BorderRadius.circular(16.0),
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff004d40), Color(0xff008080), Color(0xffF5F5F5)], // Dark teal → Teal → Light gray
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            // Padding here creates the "border width" effect
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Card(
+                elevation: 8.0,
+                color: Colors.transparent, // Make the card background transparent
+                margin: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
                 ),
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-                padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Request from Customer:',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xffF5F5F5),
-                    ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white, // White background for card content
+                    borderRadius: BorderRadius.circular(12.0),
                   ),
-                  SizedBox(height: 8),
-                  Row(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.account_circle, color: Color(0xffF5F5F5)),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Name: ${userDetails?['name']}',
-                          style: TextStyle(
-                              fontSize: 16, color: Color(0xffF5F5F5)),
+                      Text(
+                        'Request from Customer:',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.store, color: Color(0xffF5F5F5)),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Shop Name: ${userDetails?['shopName']}',
-                          style: TextStyle(
-                              fontSize: 16, color: Color(0xffF5F5F5)),
-                        ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.account_circle, color: Colors.black54),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Name: ${userDetails?['name']}',
+                              style: GoogleFonts.montserrat(
+                                  fontSize: 16, color: Colors.black87),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.phone, color: Color(0xffF5F5F5)),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Mobile: ${userDetails?['mobile']}',
-                          style: TextStyle(
-                              fontSize: 16, color: Color(0xffF5F5F5)),
-                        ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.store, color: Colors.black54),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Shop Name: ${userDetails?['shopName']}',
+                              style: GoogleFonts.montserrat(
+                                  fontSize: 16, color: Colors.black87),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  if (showAcceptButton) ...[
-                    SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            await FirebaseFirestore.instance
-                                .collection('requests')
-                                .doc(request.id)
-                                .update({'status': 'Confirmed'});
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.phone, color: Colors.black54),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Mobile: ${userDetails?['mobile']}',
+                              style: GoogleFonts.montserrat(
+                                  fontSize: 16, color: Colors.black87),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (showAcceptButton) ...[
+                        SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              try {
+                                await FirebaseFirestore.instance
+                                    .collection('requests')
+                                    .doc(request.id)
+                                    .update({'status': 'Confirmed'});
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                Text('Request confirmed successfully!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Request confirmed successfully!',
+                                        style: GoogleFonts.montserrat()),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
 
-                            _fetchRequests();
-                          } catch (error) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Failed to confirm request: $error'),
-                                backgroundColor: Colors.red,
+                                _fetchRequests();
+                              } catch (error) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to confirm request: $error',
+                                        style: GoogleFonts.montserrat()),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[800],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.0),
                               ),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xff282828),  // Dark gray for button
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
+                            ),
+                            child: Text(
+                              'Accept Request',
+                              style: GoogleFonts.montserrat(
+                                  fontSize: 16, color: Colors.white),
+                            ),
                           ),
                         ),
-                        child: Text(
-                          'Accept Request',
-                          style: TextStyle(fontSize: 16, color: Color(0xffF5F5F5)),  // Light gray text for button
-                        ),
-                      ),
-                      ),
-                  ],
-                ],
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -210,20 +218,21 @@ class _ManagePartiesState extends State<ManageParties>
       },
     );
   }
+
   Widget _buildTab({required IconData icon, required String label}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 20, color: Colors.teal.shade300),
+          Icon(icon, size: 20, color: Colors.blueGrey),
           SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.teal.shade300,
+              color: Colors.blueGrey,
             ),
           ),
         ],
@@ -234,7 +243,9 @@ class _ManagePartiesState extends State<ManageParties>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // App bar with blue-grey background and Montserrat-styled title.
       appBar: AppBar(
+        backgroundColor: Colors.blueGrey,
         title: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Row(
@@ -242,39 +253,25 @@ class _ManagePartiesState extends State<ManageParties>
             children: [
               Text(
                 'Manage Parties',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.bold,
                   fontSize: 22,
                   color: Colors.white,
-                  letterSpacing: 0.5, // Better text spacing
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.refresh, color: Colors.white, size: 28), // Slightly larger icon
+                icon: Icon(Icons.refresh, color: Colors.white, size: 28),
                 onPressed: _fetchRequests,
-                splashRadius: 24, // Better touch target
+                splashRadius: 24,
               ),
             ],
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade700, Colors.teal.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(16),
-              bottomRight: Radius.circular(16),
-            ),
           ),
         ),
         bottom: TabBar(
           controller: _tabController,
           indicator: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12), // Rounded edges for active tab
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -283,15 +280,15 @@ class _ManagePartiesState extends State<ManageParties>
               ),
             ],
           ),
-          indicatorColor: Colors.transparent, // Hide default indicator
+          indicatorColor: Colors.transparent,
           indicatorSize: TabBarIndicatorSize.tab,
           labelColor: Colors.black,
-          unselectedLabelColor: Colors.white.withOpacity(0.8),
-          labelStyle: TextStyle(
+          unselectedLabelColor: Colors.white70,
+          labelStyle: GoogleFonts.montserrat(
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
-          unselectedLabelStyle: TextStyle(
+          unselectedLabelStyle: GoogleFonts.montserrat(
             fontWeight: FontWeight.w400,
             fontSize: 14,
           ),
@@ -301,84 +298,138 @@ class _ManagePartiesState extends State<ManageParties>
           ],
         ),
         elevation: 6,
-        shadowColor: Colors.black.withOpacity(0.2),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      // Background with white fading image.
+      body: Stack(
         children: [
-          newRequests.isEmpty
-              ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded, // Icon for "No Requests"
-                  size: 50,
-                  color: Colors.orange,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'No Requests Available',
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Please check back later.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
             ),
-          )
-              : ListView.builder(
-            itemCount: newRequests.length,
-            itemBuilder: (context, index) {
-              return _buildRequestCard(newRequests[index], true);
-            },
           ),
-          customers.isEmpty
-              ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.people_outline_rounded, // Icon for "No Customers"
-                  size: 50,
-                  color: Colors.blueAccent,
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.0)
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                SizedBox(height: 16),
-                Text(
-                  'No Customers Found',
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'There are no customers at the moment.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+              ),
             ),
-          )
-              : ListView.builder(
-            itemCount: customers.length,
-            itemBuilder: (context, index) {
-              return _buildRequestCard(customers[index], false);
-            },
+          ),
+          TabBarView(
+            controller: _tabController,
+            children: [
+              newRequests.isEmpty
+                  ? Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16.0),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                    child: Container(
+                      padding: EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16.0),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 50,
+                            color: Colors.orange,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No Requests Available',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 20,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Please check back later.',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+                  : ListView.builder(
+                itemCount: newRequests.length,
+                itemBuilder: (context, index) {
+                  return _buildRequestCard(newRequests[index], true);
+                },
+              ),
+              customers.isEmpty
+                  ? Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16.0),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                    child: Container(
+                      padding: EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(16.0),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.people_outline_rounded,
+                            size: 50,
+                            color: Colors.blueAccent,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No Customers Found',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 20,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'There are no customers at the moment.',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+                  : ListView.builder(
+                itemCount: customers.length,
+                itemBuilder: (context, index) {
+                  return _buildRequestCard(customers[index], false);
+                },
+              ),
+            ],
           ),
         ],
       ),

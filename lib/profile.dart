@@ -1,6 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'login.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -23,7 +28,14 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController shopNameController = TextEditingController();
 
   // Track original values for each field
-  String? originalName, originalEmail, originalPhone, originalUserType, originalState, originalAddress, originalGstNumber, originalShopName;
+  String? originalName,
+      originalEmail,
+      originalPhone,
+      originalUserType,
+      originalState,
+      originalAddress,
+      originalGstNumber,
+      originalShopName;
 
   @override
   void initState() {
@@ -38,8 +50,10 @@ class _ProfilePageState extends State<ProfilePage> {
     if (user != null) {
       try {
         // Get user data from Firestore collection "users"
-        DocumentSnapshot docSnapshot =
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
 
         if (docSnapshot.exists) {
           setState(() {
@@ -79,17 +93,98 @@ class _ProfilePageState extends State<ProfilePage> {
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.blueGrey,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Profile',
-          style: TextStyle(
+          style: GoogleFonts.montserrat(
             fontWeight: FontWeight.bold,
             fontSize: 25,
-            color: Colors.black,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: () async {
+              bool? confirm = await showDialog<bool>(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                    ),
+                    title: Text(
+                      "Confirm Logout",
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    content: Text(
+                      "This action cannot be redone. All your data will be wiped out.",
+                      style: GoogleFonts.montserrat(),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false); // User cancels
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(color: Colors.blueGrey),
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        child: Text(
+                          "Cancel",
+                          style: GoogleFonts.montserrat(
+                            color: Colors.blueGrey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(true); // User confirms logout
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.red.shade600,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        child: Text(
+                          "Logout",
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+              if (confirm == true) {
+                // Sign out from Google
+                await GoogleSignIn().signOut();
+                // Sign out from Firebase
+                await FirebaseAuth.instance.signOut();
+                // Clear stored app data (e.g., shared preferences)
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+                // Navigate to the login screen (adjust route as needed)
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => LoginApp()),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -125,30 +220,30 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     // Profile Image Section
                     _buildProfileImage(userData?['photoURL']),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // Name Section
                     _buildUserInfoSection('Name', userData?['name'], Icons.person, 'name'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     _buildUserInfoSection('Shop Name', userData?['shopName'], Icons.shop_2_outlined, 'shopName'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // Email Section
                     _buildUserInfoSection('Email', userData?['email'], Icons.email, 'email'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // Mobile Section
                     _buildUserInfoSection('Phone', userData?['mobile'], Icons.phone, 'mobile'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // Account Type Section
                     _buildUserInfoSection('Account Type', userData?['userType'], Icons.account_circle, 'userType'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // State Section
                     _buildUserInfoSection('State', userData?['state'], Icons.location_on, 'state'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // Address Section
                     _buildUserInfoSection('Address', userData?['address'], Icons.home, 'address'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // GST Number Section
                     _buildUserInfoSection('GST Number', userData?['gstNumber'], Icons.business, 'gstNumber'),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // Save/Cancel Buttons
                     _buildSaveCancelButtons(),
                   ],
@@ -168,10 +263,9 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: Colors.grey[200],
       backgroundImage: photoURL != null && photoURL.isNotEmpty
           ? NetworkImage(photoURL)
-          : const NetworkImage('https://www.w3schools.com/w3images/avatar2.png'),
+          : NetworkImage('https://www.w3schools.com/w3images/avatar2.png'),
     );
   }
-
 
   // Helper method to build each user info section with an optional icon
   Widget _buildUserInfoSection(String title, String? value, IconData? icon, String field) {
@@ -202,7 +296,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
           Text(
             '$title: ',
-            style: TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.teal,
@@ -214,7 +308,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ? _buildEditableField(field)
                 : Text(
               value ?? 'Not Available',
-              style: TextStyle(
+              style: GoogleFonts.montserrat(
                 fontSize: 18,
                 color: Colors.black,
               ),
@@ -237,42 +331,74 @@ class _ProfilePageState extends State<ProfilePage> {
       case 'name':
         return TextField(
           controller: nameController,
-          decoration: InputDecoration(hintText: 'Enter your name'),
+          decoration: InputDecoration(
+            hintText: 'Enter your name',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       case 'shopName':
         return TextField(
           controller: shopNameController,
-          decoration: InputDecoration(hintText: 'Enter Shop Name'),
+          decoration: InputDecoration(
+            hintText: 'Enter Shop Name',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       case 'email':
         return TextField(
           controller: emailController,
-          decoration: InputDecoration(hintText: 'Enter your email'),
+          decoration: InputDecoration(
+            hintText: 'Enter your email',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       case 'mobile':
         return TextField(
           controller: phoneController,
-          decoration: InputDecoration(hintText: 'Enter your phone'),
+          decoration: InputDecoration(
+            hintText: 'Enter your phone',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       case 'userType':
         return TextField(
           controller: userTypeController,
-          decoration: InputDecoration(hintText: 'Enter your account type'),
+          decoration: InputDecoration(
+            hintText: 'Enter your account type',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       case 'state':
         return TextField(
           controller: stateController,
-          decoration: InputDecoration(hintText: 'Enter your state'),
+          decoration: InputDecoration(
+            hintText: 'Enter your state',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       case 'address':
         return TextField(
           controller: addressController,
-          decoration: InputDecoration(hintText: 'Enter your address'),
+          decoration: InputDecoration(
+            hintText: 'Enter your address',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       case 'gstNumber':
         return TextField(
           controller: gstNumberController,
-          decoration: InputDecoration(hintText: 'Enter GST number'),
+          decoration: InputDecoration(
+            hintText: 'Enter GST number',
+            hintStyle: GoogleFonts.montserrat(),
+          ),
+          style: GoogleFonts.montserrat(),
         );
       default:
         return Container();
@@ -290,7 +416,10 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icon(Icons.save, color: Colors.white),
             label: Text(
               'Save Changes',
-              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
@@ -308,7 +437,10 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icon(Icons.cancel, color: Colors.white),
             label: Text(
               'Cancel Changes',
-              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -379,14 +511,14 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)), // Rounded corners
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
           title: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green), // Success icon
+              Icon(Icons.check_circle, color: Colors.green),
               SizedBox(width: 10),
               Text(
                 'Success',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   color: Colors.green,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
@@ -396,7 +528,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           content: Text(
             message,
-            style: TextStyle(fontSize: 16),
+            style: GoogleFonts.montserrat(fontSize: 16),
           ),
           actions: [
             TextButton(
@@ -405,7 +537,7 @@ class _ProfilePageState extends State<ProfilePage> {
               },
               child: Text(
                 'OK',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   color: Colors.green,
                   fontWeight: FontWeight.bold,
                 ),
@@ -417,20 +549,20 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-// Show error dialog
+  // Show error dialog
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)), // Rounded corners
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
           title: Row(
             children: [
-              Icon(Icons.error, color: Colors.red), // Error icon
+              Icon(Icons.error, color: Colors.red),
               SizedBox(width: 10),
               Text(
                 'Error',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
@@ -440,7 +572,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           content: Text(
             message,
-            style: TextStyle(fontSize: 16),
+            style: GoogleFonts.montserrat(fontSize: 16),
           ),
           actions: [
             TextButton(
@@ -449,7 +581,7 @@ class _ProfilePageState extends State<ProfilePage> {
               },
               child: Text(
                 'OK',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
                 ),

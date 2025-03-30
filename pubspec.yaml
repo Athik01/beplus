@@ -58,6 +58,7 @@ dependencies:
   image: ^4.0.15
   excel: ^4.0.6
   animate_do: ^4.2.0
+  shared_preferences: ^2.5.3
   d_chart: ^2.10.2
   syncfusion_flutter_charts: ^28.2.3
 dependency_overrides:

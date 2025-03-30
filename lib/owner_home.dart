@@ -1435,7 +1435,7 @@ class BalanceScreen extends StatelessWidget {
             Icon(Icons.currency_rupee_sharp, color: Colors.white),
             SizedBox(width: 8),
             Text(
-              'Balance',
+              'New Orders!',
               style: GoogleFonts.montserrat(
                 fontWeight: FontWeight.bold,
                 color : Colors.white,

@@ -6,9 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:beplus/stastics.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'package:google_fonts/google_fonts.dart';
 class ManageProducts extends StatefulWidget {
   final String userId;
-
   const ManageProducts({Key? key, required this.userId}) : super(key: key);
 
   @override
@@ -35,9 +35,11 @@ class _ManageProductsState extends State<ManageProducts> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      // We'll build our custom background via a Stack.
+      extendBodyBehindAppBar: true,
+      // The AppBar with blue-grey background and Montserrat text style.
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.blueGrey,
         elevation: 1,
         centerTitle: true,
         title: isSearching
@@ -52,21 +54,17 @@ class _ManageProductsState extends State<ManageProducts> {
             autofocus: true,
             decoration: InputDecoration(
               hintText: 'Search categories...',
+              hintStyle: GoogleFonts.montserrat(),
               border: InputBorder.none,
               prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-              suffixIcon: IconButton(
-                icon: Icon(Icons.clear, color: Colors.grey[600]),
-                onPressed: () {
-                  _searchController.clear();
-                },
-              ),
             ),
+            style: GoogleFonts.montserrat(),
           ),
         )
             : Text(
           'Manage Products',
-          style: TextStyle(
-            color: Colors.black87,
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -96,119 +94,157 @@ class _ManageProductsState extends State<ManageProducts> {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: categories.where('userId', isEqualTo: widget.userId).snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return Center(
-                child: Text(
-                  'No categories found.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+      body: Stack(
+        children: [
+          // Background image from lib/assets/back.png
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          // White fading gradient overlay for a premium look
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.0),
+                  ],
                 ),
-              );
-            }
-            var categoryList = snapshot.data!.docs.where((doc) {
-              final name = doc['name'] ?? '';
-              return name.toString().toLowerCase().contains(searchQuery);
-            }).toList();
-            return GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.85,
               ),
-              itemCount: categoryList.length,
-              itemBuilder: (context, index) {
-                var category = categoryList[index];
-                final String image = category['image'] ?? '';
-                ImageProvider? imageProvider;
-                if (image.startsWith('https://')) {
-                  imageProvider = NetworkImage(image);
-                } else {
-                  final Uint8List? imageBytes = image.isNotEmpty ? base64Decode(image) : null;
-                  if (imageBytes != null) {
-                    imageProvider = MemoryImage(imageBytes);
-                  }
+            ),
+          ),
+          // Main content with padding
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: categories.where('userId', isEqualTo: widget.userId).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
                 }
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryDetailPage(
-                          categoryName: category['name'] ?? 'Unnamed',
-                          userId: FirebaseAuth.instance.currentUser!.uid,
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}', style: GoogleFonts.montserrat()));
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No categories found.',
+                      style: GoogleFonts.montserrat(fontSize: 16, color: Colors.grey),
+                    ),
+                  );
+                }
+                var categoryList = snapshot.data!.docs.where((doc) {
+                  final name = doc['name'] ?? '';
+                  return name.toString().toLowerCase().contains(searchQuery);
+                }).toList();
+                return GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: categoryList.length,
+                  itemBuilder: (context, index) {
+                    var category = categoryList[index];
+                    final String image = category['image'] ?? '';
+                    ImageProvider? imageProvider;
+                    if (image.startsWith('https://')) {
+                      imageProvider = NetworkImage(image);
+                    } else {
+                      final Uint8List? imageBytes = image.isNotEmpty ? base64Decode(image) : null;
+                      if (imageBytes != null) {
+                        imageProvider = MemoryImage(imageBytes);
+                      }
+                    }
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CategoryDetailPage(
+                              categoryName: category['name'] ?? 'Unnamed',
+                              userId: FirebaseAuth.instance.currentUser!.uid,
+                            ),
+                          ),
+                        );
+                      },
+                      // Wrap each card in a Container to simulate a border using lib/assets/back2.png
+                      child: Container(
+                        padding: EdgeInsets.all(4), // Adjust for desired border thickness
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('lib/assets/back2.png'),
+                            fit: BoxFit.fill,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              if (imageProvider != null)
+                                Image(
+                                  image: imageProvider,
+                                  fit: BoxFit.cover,
+                                )
+                              else
+                                Container(color: Colors.grey[300]),
+                              // Gradient overlay for better text readability
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black54,
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 12,
+                                right: 12,
+                                bottom: 12,
+                                child: Text(
+                                  category['name'] ?? 'Unnamed',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [
+                                      Shadow(
+                                        offset: Offset(0, 1),
+                                        blurRadius: 3,
+                                        color: Colors.black87,
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
                   },
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 4,
-                    clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (imageProvider != null)
-                          Image(
-                            image: imageProvider,
-                            fit: BoxFit.cover,
-                          )
-                        else
-                          Container(color: Colors.grey[300]),
-                        // Gradient overlay for better text readability
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                Colors.black54,
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 12,
-                          right: 12,
-                          bottom: 12,
-                          child: Text(
-                            category['name'] ?? 'Unnamed',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(0, 1),
-                                  blurRadius: 3,
-                                  color: Colors.black87,
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 );
               },
-            );
-          },
-        ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -219,7 +255,7 @@ class _ManageProductsState extends State<ManageProducts> {
         },
         backgroundColor: Colors.teal[700],
         icon: Icon(Icons.add, color: Colors.white),
-        label: Text("Add Category", style: TextStyle(color: Colors.white)),
+        label: Text("Add Category", style: GoogleFonts.montserrat(color: Colors.white)),
       ),
     );
   }

@@ -2,6 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shimmer/shimmer.dart';
+import 'dart:ui';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 class TallyERP extends StatefulWidget {
   const TallyERP({Key? key}) : super(key: key);
 
@@ -10,141 +14,692 @@ class TallyERP extends StatefulWidget {
 }
 
 class _TallyERPState extends State<TallyERP> {
-  List<Map<String, dynamic>> customers = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchCustomers();
+  // Helper method to build a bordered card with the border image (lib/assets/back2.png)
+  Widget _buildBorderedCard({required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/assets/back2.png'),
+            fit: BoxFit.fill,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        // Inset the Card so that the border image appears around it.
+        child: Card(
+          margin: const EdgeInsets.all(8.0),
+          elevation: 4,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: child,
+        ),
+      ),
+    );
   }
 
-  Future<void> fetchCustomers() async {
-    setState(() => isLoading = true);
+  // Fetches collection entries for a customer and displays account details.
+  Widget _buildAccountDetails(String customerId, double totalAmount) {
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('collectionEntries')
+          .where('customerId', isEqualTo: customerId)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Text(
+            "Error fetching account details",
+            style: GoogleFonts.montserrat(),
+          );
+        }
+        double collected = 0.0;
+        for (var doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data.containsKey('amount')) {
+            collected += (data['amount'] as num).toDouble();
+          }
+        }
+        double balance = totalAmount - collected;
+        bool isTally = balance.abs() < 0.01;
 
-    final billsSnapshot = await FirebaseFirestore.instance
-        .collection('bills')
-        .where('ownerId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-        .get();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Total Amount: ₹${totalAmount.toStringAsFixed(2)}',
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isTally ? Colors.green : Colors.black,
+              ),
+            ),
+            Text(
+              'Balance: ${isTally ? 'Nil' : '₹${balance.toStringAsFixed(2)}'}',
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isTally ? Colors.green : Colors.red,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-    final customerMap = <String, Map<String, dynamic>>{};
-
-    for (var doc in billsSnapshot.docs) {
-      final data = doc.data();
-      final customerId = data['customerId'];
-
-      if (!customerMap.containsKey(customerId)) {
-        customerMap[customerId] = {
-          'customerId': customerId,
-          'totalAmount': 0.0,
-          'customerName': '',
-        };
-      }
-      customerMap[customerId]!['totalAmount'] += (data['totalAmount'] ?? 0.0);
-    }
-
-    await Future.forEach(customerMap.keys, (customerId) async {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(customerId)
-          .get();
-
-      customerMap[customerId]!['customerName'] = userDoc.exists
-          ? userDoc['name'] ?? 'Unknown'
-          : 'Unknown';
-    });
-
-    setState(() {
-      customers = customerMap.values.toList();
-      isLoading = false;
-    });
+  // Action dialog (unchanged)
+  void _showActionDialog(Map<String, dynamic> customer) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('lib/assets/back2.png'),
+              fit: BoxFit.fill,
+            ),
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16.0),
+              child: Container(
+                color: Colors.white,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title Area
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      decoration: BoxDecoration(
+                        color: Colors.blueGrey[50],
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.blueGrey.withOpacity(0.2),
+                          ),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "Choose Action",
+                          style: GoogleFonts.montserrat(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueGrey[800],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Content Area
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 20.0),
+                      child: Text(
+                        "Select an option",
+                        style: GoogleFonts.montserrat(
+                          fontSize: 16,
+                          color: Colors.blueGrey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    // Action Buttons (one per line)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.blueGrey[100],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          minimumSize: Size(double.infinity, 0),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CollectionEntryPage(
+                                  customerId: customer['customerId']),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Add Collection Entry",
+                          style: GoogleFonts.montserrat(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blueGrey[800],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.blueGrey[100],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          minimumSize: Size(double.infinity, 0),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) =>
+                                  MonthlyInvoicesPage(
+                                      customerId: customer['customerId']),
+                              transitionsBuilder:
+                                  (context, animation, secondaryAnimation, child) {
+                                const begin = Offset(1.0, 0.0);
+                                const end = Offset.zero;
+                                const curve = Curves.easeInOut;
+                                var tween = Tween(begin: begin, end: end)
+                                    .chain(CurveTween(curve: curve));
+                                return SlideTransition(
+                                  position: animation.drive(tween),
+                                  child: child,
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Sales Invoice",
+                          style: GoogleFonts.montserrat(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blueGrey[800],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Tally ERP - Customer List',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color:Colors.white),
-        ),
-        backgroundColor: Colors.teal,
-        centerTitle: true,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : AnimatedOpacity(
-        opacity: isLoading ? 0.0 : 1.0,
-        duration: const Duration(milliseconds: 600),
-        child: ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: customers.length,
-          itemBuilder: (context, index) {
-            final customer = customers[index];
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      // Stack for background image and gradient overlay
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.0)
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
-              elevation: 4,
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  backgroundColor: Colors.teal,
-                  child: Text(
-                    customer['customerName'][0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                title: Text(
-                  customer['customerName'],
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                subtitle: Text(
-                  'Total Amount: ₹${customer['totalAmount'].toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                  ),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios_rounded),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            MonthlyInvoicesPage(
-                                customerId: customer['customerId']),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          const begin = Offset(1.0, 0.0);
-                          const end = Offset.zero;
-                          const curve = Curves.easeInOut;
+            ),
+          ),
+          SafeArea(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('bills')
+                  .where('ownerId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                // Group bills by customer
+                final billsDocs = snapshot.data!.docs;
+                final customerMap = <String, Map<String, dynamic>>{};
+                for (var doc in billsDocs) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final customerId = data['customerId'];
+                  if (!customerMap.containsKey(customerId)) {
+                    customerMap[customerId] = {
+                      'customerId': customerId,
+                      'totalAmount': 0.0,
+                      'customerName': 'Loading...',
+                    };
+                  }
+                  customerMap[customerId]!['totalAmount'] += (data['totalAmount'] ?? 0.0);
+                }
+                final customersList = customerMap.values.toList();
 
-                          var tween = Tween(begin: begin, end: end).chain(
-                            CurveTween(curve: curve),
-                          );
-
-                          return SlideTransition(
-                            position: animation.drive(tween),
-                            child: child,
-                          );
-                        },
-                      ),
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: customersList.length,
+                  itemBuilder: (context, index) {
+                    final customer = customersList[index];
+                    // For dynamic user info, fetch using a FutureBuilder for each customer
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(customer['customerId'])
+                          .get(),
+                      builder: (context, userSnapshot) {
+                        if (!userSnapshot.hasData) {
+                          return _buildBorderedCard(
+                              child: ListTile(title: Text('Loading...')));
+                        }
+                        final userData =
+                        userSnapshot.data!.data() as Map<String, dynamic>?;
+                        customer['customerName'] = userData != null ? userData['name'] ?? 'Unknown' : 'Unknown';
+                        return _buildBorderedCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Colors.blueGrey,
+                                      child: Text(
+                                        customer['customerName'][0].toUpperCase(),
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Text(
+                                        customer['customerName'],
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                      ),
+                                      color: Colors.blueGrey,
+                                      onPressed: () => _showActionDialog(customer),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                // Account details from collection entries
+                                _buildAccountDetails(
+                                  customer['customerId'],
+                                  customer['totalAmount'],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      appBar: AppBar(
+        title: Text(
+          'Tally ERP - Customer List',
+          style: GoogleFonts.montserrat(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.blueGrey,
+        centerTitle: true,
+      ),
+    );
+  }
+}
+class CollectionEntryPage extends StatefulWidget {
+  final String customerId;
+
+  const CollectionEntryPage({Key? key, required this.customerId})
+      : super(key: key);
+
+  @override
+  _CollectionEntryPageState createState() => _CollectionEntryPageState();
+}
+
+class _CollectionEntryPageState extends State<CollectionEntryPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
+
+  DateTime? _selectedDate;
+  String _paymentMethod = 'Cash'; // default payment method
+  String customerName = 'Loading...';
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set default selected date to current date.
+    _selectedDate = DateTime.now();
+    _fetchCustomerDetails();
+  }
+
+  Future<void> _fetchCustomerDetails() async {
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.customerId)
+          .get();
+      if (doc.exists) {
+        setState(() {
+          customerName = doc['name'] ?? 'Unknown';
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          customerName = 'Unknown';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        customerName = 'Error';
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _selectDate() async {
+    DateTime initialDate = _selectedDate ?? DateTime.now();
+    DateTime firstDate = DateTime(initialDate.year - 1);
+    DateTime lastDate = DateTime(initialDate.year + 1);
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _submitEntry() async {
+    if (_formKey.currentState!.validate() && _selectedDate != null) {
+      double amount = double.tryParse(_amountController.text) ?? 0.0;
+      String notes = _notesController.text;
+      try {
+        await FirebaseFirestore.instance.collection('collectionEntries').add({
+          'customerId': widget.customerId,
+          'customerName': customerName,
+          'amount': amount,
+          'date': _selectedDate,
+          'paymentMethod': _paymentMethod,
+          'notes': notes,
+          'ownerId': FirebaseAuth.instance.currentUser!.uid,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Collection entry saved successfully!',
+                  style: GoogleFonts.montserrat(),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blueGrey,
+          ),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Error saving entry: $e',
+                  style: GoogleFonts.montserrat(),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blueGrey,
+          ),
+        );
+      }
+    } else {
+      if (_selectedDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Please select a date',
+              style: GoogleFonts.montserrat(),
+            ),
+            backgroundColor: Colors.blueGrey,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Use a Stack to display background image and gradient overlay.
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.0)
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
-            );
-          },
+            ),
+          ),
+          SafeArea(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Display customer information
+                  Text(
+                    'Customer: $customerName',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Amount Received Field
+                        TextFormField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Amount Received',
+                            labelStyle: GoogleFonts.montserrat(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter amount';
+                            }
+                            if (double.tryParse(value) == null) {
+                              return 'Enter valid number';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        // Date Picker Field
+                        GestureDetector(
+                          onTap: _selectDate,
+                          child: AbsorbPointer(
+                            child: TextFormField(
+                              decoration: InputDecoration(
+                                labelText:
+                                'Date: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
+                                labelStyle: GoogleFonts.montserrat(),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Payment Method Dropdown
+                        DropdownButtonFormField<String>(
+                          value: _paymentMethod,
+                          decoration: InputDecoration(
+                            labelText: 'Payment Method',
+                            labelStyle: GoogleFonts.montserrat(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                          ),
+                          items: <String>['Cash', 'Card', 'Online']
+                              .map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value,
+                                style: GoogleFonts.montserrat(),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _paymentMethod = newValue!;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        // Notes Field (optional)
+                        TextFormField(
+                          controller: _notesController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: 'Notes (optional)',
+                            labelStyle: GoogleFonts.montserrat(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Submit Button
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: _submitEntry,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueGrey,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 40, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                            ),
+                            child: Text(
+                              'Submit Entry',
+                              style: GoogleFonts.montserrat(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      appBar: AppBar(
+        title: Text(
+          'Collection Entry',
+          style: GoogleFonts.montserrat(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
+        backgroundColor: Colors.blueGrey,
       ),
     );
   }
@@ -222,20 +777,55 @@ class _MonthlyInvoicesPageState extends State<MonthlyInvoicesPage> {
     }
 
     setState(() {
-      monthlyInvoices = monthlyData.entries.map((e) => {
+      monthlyInvoices = monthlyData.entries
+          .map((e) => {
         'month': e.key,
         'invoices': e.value,
-      }).toList();
+      })
+          .toList();
       isLoading = false;
     });
   }
+
+  Widget _buildBorderedCard({required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/assets/back2.png'),
+            fit: BoxFit.fill,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        // Inset the Card so that the border image shows around it.
+        child: Card(
+          margin: const EdgeInsets.all(8.0),
+          elevation: 4,
+          color: Colors.white, // Ensure the card content has an opaque white background.
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Invoices for $customerName',style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.teal,
+        title: Text(
+          'Invoices for $customerName',
+          style: GoogleFonts.montserrat(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.blueGrey,
         elevation: 4,
       ),
       body: isLoading
@@ -244,7 +834,10 @@ class _MonthlyInvoicesPageState extends State<MonthlyInvoicesPage> {
           ? Center(
         child: Text(
           "No invoices found",
-          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+          style: GoogleFonts.montserrat(
+            fontSize: 18,
+            color: Colors.grey,
+          ),
         ),
       )
           : ListView.builder(
@@ -255,17 +848,12 @@ class _MonthlyInvoicesPageState extends State<MonthlyInvoicesPage> {
           final month = monthData['month'];
           final invoices = monthData['invoices'];
 
-          return Card(
-            elevation: 6,
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
+          return _buildBorderedCard(
             child: ExpansionTile(
-              leading: Icon(Icons.calendar_month, color: Colors.teal),
+              leading: Icon(Icons.calendar_month, color: Colors.blueGrey),
               title: Text(
                 'Month: $month',
-                style: const TextStyle(
+                style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -276,21 +864,20 @@ class _MonthlyInvoicesPageState extends State<MonthlyInvoicesPage> {
                       horizontal: 20, vertical: 10),
                   title: Text(
                     'Date: ${invoice['billDate'].toString().split(' ')[0]}',
-                    style: const TextStyle(
+                    style: GoogleFonts.montserrat(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     'Total: ₹${invoice['totalAmount']}',
-                    style: const TextStyle(
-                      color: Colors.green,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.blueGrey,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios,
-                      color: Colors.teal),
+                  trailing: Icon(Icons.arrow_forward_ios, color: Colors.blueGrey),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -310,10 +897,12 @@ class _MonthlyInvoicesPageState extends State<MonthlyInvoicesPage> {
     );
   }
 }
+
 class InvoiceDetailPage extends StatefulWidget {
   final Map<String, dynamic> invoiceData;
 
-  const InvoiceDetailPage({Key? key, required this.invoiceData}) : super(key: key);
+  const InvoiceDetailPage({Key? key, required this.invoiceData})
+      : super(key: key);
 
   @override
   _InvoiceDetailPageState createState() => _InvoiceDetailPageState();
@@ -321,23 +910,24 @@ class InvoiceDetailPage extends StatefulWidget {
 
 class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Map<String, String> productNames = {}; // Store product names
+  Map<String, Uint8List?> productImages = {}; // Store decoded image data
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchProductNames();
+    _fetchProductDetails();
   }
 
-  // 🔥 Fetch product names from Firestore
-  Future<void> _fetchProductNames() async {
+  Future<void> _fetchProductDetails() async {
     final orders = widget.invoiceData['orders'] as List;
     Map<String, String> names = {};
+    Map<String, Uint8List?> images = {};
 
     for (var order in orders) {
       final productId = order['productId'];
 
-      if (!productNames.containsKey(productId)) {
+      if (!names.containsKey(productId)) {
         try {
           final doc = await FirebaseFirestore.instance
               .collection('products')
@@ -345,112 +935,55 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               .get();
 
           if (doc.exists) {
-            names[productId] = doc['name'] ?? 'Unknown Product';
+            final data = doc.data() as Map<String, dynamic>;
+            names[productId] = data['name'] ?? 'Unknown Product';
+            if (data.containsKey('imageUrl') && data['imageUrl'] is String) {
+              try {
+                images[productId] = base64Decode(data['imageUrl']);
+              } catch (e) {
+                images[productId] = null;
+              }
+            } else {
+              images[productId] = null;
+            }
           } else {
             names[productId] = 'Unknown Product';
+            images[productId] = null;
           }
         } catch (e) {
           names[productId] = 'Error fetching product';
+          images[productId] = null;
         }
       }
     }
 
     setState(() {
       productNames = names;
+      productImages = images;
       isLoading = false;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final orders = widget.invoiceData['orders'] as List;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Invoice Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color: Colors.white)),
-        backgroundColor: Colors.teal[400],
-        elevation: 4,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          // ✅ Invoice Details Section
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInvoiceDetailRow(Icons.calendar_today, 'Bill Date', '${widget.invoiceData['billDate']}'),
-                  const Divider(),
-                  _buildInvoiceDetailRow(Icons.monetization_on, 'Total Amount', '₹${widget.invoiceData['totalAmount']}'),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ✅ Product List Section
-          Text(
-            'Products Ordered',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal[800]),
-          ),
-          const SizedBox(height: 10),
-
-          if (isLoading)
-            ...List.generate(3, (index) => _buildShimmerEffect())
-          else
-            ...orders.map((order) {
-              final productId = order['productId'];
-              final productName = productNames[productId] ?? 'Loading...';
-              final selectedSize = order['selectedSize'] as Map<String, dynamic>? ?? {};
-
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16.0),
-                  leading: Icon(Icons.shopping_cart, color: Colors.teal[400]),
-                  title: Text(
-                    productName,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: selectedSize.entries.map((entry) {
-                      return Text(
-                        'Size: ${entry.key}  |  Qty: ${entry.value}',
-                        style: TextStyle(color: Colors.grey[700]),
-                      );
-                    }).toList(),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.teal),
-                ),
-              );
-            }).toList(),
-        ],
-      ),
-    );
-  }
-
-  // 🔥 Helper Widget for Invoice Row
   Widget _buildInvoiceDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: Colors.teal[400], size: 30),
+        Icon(icon, color: Colors.blueGrey, size: 30),
         const SizedBox(width: 12),
         Text(
           '$label: ',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black54),
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -458,15 +991,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     );
   }
 
-  // 🔥 Shimmer effect while loading products
   Widget _buildShimmerEffect() {
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 4,
+      child: _buildBorderedCard(
         child: ListTile(
           leading: Container(
             width: 50,
@@ -484,6 +1013,151 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             color: Colors.white,
           ),
         ),
+      ),
+    );
+  }
+
+  // Helper method to wrap content in a card with a border image (back2.png)
+  Widget _buildBorderedCard({required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/assets/back2.png'),
+            fit: BoxFit.fill,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        // Inset the Card so the border image appears only as a border.
+        child: Card(
+          margin: const EdgeInsets.all(8.0),
+          elevation: 4,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final orders = widget.invoiceData['orders'] as List;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Invoice Details',
+          style: GoogleFonts.montserrat(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.blueGrey,
+        elevation: 4,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          _buildBorderedCard(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInvoiceDetailRow(
+                    Icons.calendar_today,
+                    'Bill Date',
+                    '${widget.invoiceData['billDate']}',
+                  ),
+                  const Divider(),
+                  _buildInvoiceDetailRow(
+                    Icons.monetization_on,
+                    'Total Amount',
+                    '₹${widget.invoiceData['totalAmount']}',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Products Ordered',
+            style: GoogleFonts.montserrat(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.blueGrey,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (isLoading)
+            ...List.generate(3, (index) => _buildShimmerEffect())
+          else
+            ...orders.map((order) {
+              final productId = order['productId'];
+              final productName = productNames[productId] ?? 'Loading...';
+              final selectedSize =
+                  order['selectedSize'] as Map<String, dynamic>? ?? {};
+
+              return _buildBorderedCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Product Image
+                      productImages[productId] != null
+                          ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(
+                          productImages[productId]!,
+                          width: double.infinity,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                          : Container(
+                        width: double.infinity,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.shopping_cart,
+                          size: 50,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Product Name
+                      Text(
+                        productName,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Selected Sizes and Quantity
+                      ...selectedSize.entries.map((entry) {
+                        return Text(
+                          'Size: ${entry.key}  |  Qty: ${entry.value}',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.grey[700],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+        ],
       ),
     );
   }

@@ -171,165 +171,178 @@ class BillsGenerator {
     TextEditingController cgstController = TextEditingController();
     TextEditingController sgstController = TextEditingController();
     TextEditingController discountController = TextEditingController();
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0),
-          ),
-          title: Column(
-            children: [
-              Text(
-                "GST & Discount",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Colors.teal,
-                  height: 1.5,// Teal color for title text
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.all(16),
+          child: Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('lib/assets/back2.png'),
+                fit: BoxFit.fill,
+              ),
+              borderRadius: BorderRadius.circular(15.0),
+            ),
+            child: AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15.0),
+              ),
+              title: Column(
+                children: [
+                  Text(
+                    "GST & Discount",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.teal,
+                      height: 1.5,
+                    ),
+                  ),
+                  Divider(
+                    color: Colors.teal,
+                    thickness: 1.5,
+                  ),
+                ],
+              ),
+              content: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // CGST Input Field
+                    TextField(
+                      controller: cgstController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "CGST Percentage",
+                        labelStyle: TextStyle(color: Colors.teal),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.teal),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                        hintText: "Enter CGST value",
+                        hintStyle: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    // SGST Input Field
+                    TextField(
+                      controller: sgstController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "SGST Percentage",
+                        labelStyle: TextStyle(color: Colors.teal),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.teal),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                        hintText: "Enter SGST value",
+                        hintStyle: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    // Discount Percentage Input Field
+                    TextField(
+                      controller: discountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Discount Percentage",
+                        labelStyle: TextStyle(color: Colors.teal),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.teal),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                        hintText: "Enter Discount Percentage",
+                        hintStyle: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Divider(
-                color: Colors.teal,
-                thickness: 1.5,
-              ),
-            ],
-          ),
-          content: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // CGST Input Field
-                TextField(
-                  controller: cgstController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: "CGST Percentage",
-                    labelStyle: TextStyle(color: Colors.teal),
-                    border: OutlineInputBorder(
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    // Parse the values from the text controllers
+                    cgstPercentage = double.tryParse(cgstController.text) ?? 0;
+                    sgstPercentage = double.tryParse(sgstController.text) ?? 0;
+                    gstPercentage = cgstPercentage + sgstPercentage; // Calculate GST Percentage
+
+                    // Parse discount percentage
+                    discount = double.tryParse(discountController.text) ?? 0;
+
+                    Navigator.of(context).pop();
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.teal),
                     ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                    hintText: "Enter CGST value",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: Text(
+                    "OK",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                SizedBox(height: 10),
-                // SGST Input Field
-                TextField(
-                  controller: sgstController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: "SGST Percentage",
-                    labelStyle: TextStyle(color: Colors.teal),
-                    border: OutlineInputBorder(
+                TextButton(
+                  onPressed: () {
+                    isNoUpdate = false;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "No Bill generating bill!",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        backgroundColor: Colors.red.shade700,
+                        duration: Duration(seconds: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.all(16),
+                        elevation: 6,
+                      ),
+                    );
+                    Navigator.of(context).pop();
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.teal),
+                      side: BorderSide(color: Colors.teal),
                     ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                    hintText: "Enter SGST value",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
-                ),
-                SizedBox(height: 10),
-                // Discount Percentage Input Field
-                TextField(
-                  controller: discountController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: "Discount Percentage",
-                    labelStyle: TextStyle(color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.teal),
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(
+                      color: Colors.teal,
+                      fontWeight: FontWeight.bold,
                     ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                    hintText: "Enter Discount Percentage",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
                   ),
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                // Parse the values from the text controllers
-                cgstPercentage = double.tryParse(cgstController.text) ?? 0;
-                sgstPercentage = double.tryParse(sgstController.text) ?? 0;
-                gstPercentage = cgstPercentage + sgstPercentage; // Calculate GST Percentage
-
-                // Parse discount percentage and calculate discount price
-                discount = double.tryParse(discountController.text) ?? 0;
-
-                // Calculate the total GST
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.teal,  // Teal background for the button
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              child: Text(
-                "OK",
-                style: TextStyle(
-                  color: Colors.white,  // White text on the button
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                isNoUpdate = false;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      "No Bill generating bill!",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    backgroundColor: Colors.red.shade700, // Red background for error message
-                    duration: Duration(seconds: 4), // Customize the duration as needed
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // Rounded corners
-                    ),
-                    behavior: SnackBarBehavior.floating, // Makes it float above other content
-                    margin: EdgeInsets.all(16), // Add margin around the SnackBar
-                    elevation: 6, // Shadow effect
-                  ),
-                );
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white,  // White background for cancel button
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.teal),  // Teal border for cancel button
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              child: Text(
-                "Cancel",
-                style: TextStyle(
-                  color: Colors.teal,  // Teal color for cancel text
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );
     return gstPercentage;
   }
-
 
   Future<Map<String, dynamic>?> _fetchOrderData(String orderId) async {
     try {
