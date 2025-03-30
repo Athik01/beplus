@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:fl_chart/fl_chart.dart';
 class TallyERP extends StatefulWidget {
   const TallyERP({Key? key}) : super(key: key);
 
@@ -14,6 +15,12 @@ class TallyERP extends StatefulWidget {
 }
 
 class _TallyERPState extends State<TallyERP> {
+  late BuildContext _parentContext;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _parentContext = context;
+  }
   // Helper method to build a bordered card with the border image (lib/assets/back2.png)
   Widget _buildBorderedCard({required Widget child}) {
     return Padding(
@@ -157,7 +164,7 @@ class _TallyERPState extends State<TallyERP> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    // Action Buttons (one per line)
+                    // "Add Collection Entry" Button
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: TextButton(
@@ -170,15 +177,55 @@ class _TallyERPState extends State<TallyERP> {
                               horizontal: 16, vertical: 12),
                           minimumSize: Size(double.infinity, 0),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CollectionEntryPage(
-                                  customerId: customer['customerId']),
-                            ),
-                          );
+                        onPressed: () async {
+                          // Capture the messenger and current navigation context.
+                          final messenger = ScaffoldMessenger.of(_parentContext);
+                          final navContext = _parentContext;
+                          Navigator.pop(context); // Dismiss dialog
+
+                          // Query collection entries for this customer to check balance.
+                          QuerySnapshot snapshot = await FirebaseFirestore.instance
+                              .collection('collectionEntries')
+                              .where('customerId', isEqualTo: customer['customerId'])
+                              .get();
+                          double collected = 0.0;
+                          for (var doc in snapshot.docs) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            if (data.containsKey('amount')) {
+                              collected += (data['amount'] as num).toDouble();
+                            }
+                          }
+                          double balance = (customer['totalAmount'] as num).toDouble() - collected;
+                          bool isTally = balance.abs() < 0.01;
+
+                          if (!isTally) {
+                            Future.delayed(Duration.zero, () {
+                              Navigator.push(
+                                navContext,
+                                MaterialPageRoute(
+                                  builder: (context) => CollectionEntryPage(
+                                      customerId: customer['customerId']),
+                                ),
+                              );
+                            });
+                          } else {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_circle, color: Colors.white, size: 24),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Not needed for this user",
+                                      style: GoogleFonts.montserrat(),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: Colors.blueGrey,
+                              ),
+                            );
+                          }
                         },
                         child: Text(
                           "Add Collection Entry",
@@ -191,6 +238,43 @@ class _TallyERPState extends State<TallyERP> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // New "Collection Invoice" Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.blueGrey[100],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          minimumSize: Size(double.infinity, 0),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          // Navigate to CollectionInvoicePage to show collection details.
+                          Navigator.push(
+                            _parentContext,
+                            MaterialPageRoute(
+                              builder: (context) => CollectionInvoicePage(
+                                customerId: customer['customerId'],
+                              ),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Collection Invoice",
+                          style: GoogleFonts.montserrat(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blueGrey[800],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // "Sales Invoice" Button
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: TextButton(
@@ -206,7 +290,7 @@ class _TallyERPState extends State<TallyERP> {
                         onPressed: () {
                           Navigator.pop(context);
                           Navigator.push(
-                            context,
+                            _parentContext,
                             PageRouteBuilder(
                               pageBuilder: (context, animation, secondaryAnimation) =>
                                   MonthlyInvoicesPage(
@@ -390,6 +474,311 @@ class _TallyERPState extends State<TallyERP> {
     );
   }
 }
+
+class CollectionInvoicePage extends StatefulWidget {
+  final String customerId;
+
+  const CollectionInvoicePage({Key? key, required this.customerId})
+      : super(key: key);
+
+  @override
+  _CollectionInvoicePageState createState() => _CollectionInvoicePageState();
+}
+
+class _CollectionInvoicePageState extends State<CollectionInvoicePage> {
+  String customerName = "Loading...";
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCustomerName();
+  }
+
+  Future<void> _fetchCustomerName() async {
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(widget.customerId)
+          .get();
+      setState(() {
+        customerName = doc.exists ? (doc["name"] ?? "Unknown") : "Unknown";
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        customerName = "Error";
+        isLoading = false;
+      });
+    }
+  }
+
+  // Build a BarChart from a map of month-year to total amount.
+  Widget _buildBarChart(Map<String, double> monthlyTotals) {
+    // Sort keys in ascending order.
+    List<String> months = monthlyTotals.keys.toList()..sort();
+    List<BarChartGroupData> barGroups = [];
+    for (int i = 0; i < months.length; i++) {
+      double total = monthlyTotals[months[i]]!;
+      barGroups.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: total,
+              color: Colors.blueGrey,
+              width: 16,
+              borderRadius: BorderRadius.circular(4),
+            )
+          ],
+        ),
+      );
+    }
+
+    // Wrap the bar chart in a white container with padding,
+    // then wrap that container in another container with the border image.
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/assets/back2.png'),
+            fit: BoxFit.fill,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Container(
+          margin: const EdgeInsets.all(8.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(8.0),
+          child: AspectRatio(
+            aspectRatio: 1.7,
+            child: BarChart(
+              BarChartData(
+                barGroups: barGroups,
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toStringAsFixed(0),
+                          style: GoogleFonts.montserrat(fontSize: 10, color: Colors.blueGrey),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        int index = value.toInt();
+                        if (index >= 0 && index < months.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              months[index],
+                              style: GoogleFonts.montserrat(fontSize: 10, color: Colors.blueGrey),
+                            ),
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                gridData: FlGridData(show: false),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          "Collection Invoice for $customerName",
+          style: GoogleFonts.montserrat(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.blueGrey,
+        centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          // Background image
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          // White fading gradient overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.0)
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+          // Main Content
+          SafeArea(
+            child: isLoading
+                ? Center(child: CircularProgressIndicator())
+                : FutureBuilder<QuerySnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection("collectionEntries")
+                  .where("customerId", isEqualTo: widget.customerId)
+                  .orderBy("date", descending: true)
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      "Error fetching collection entries",
+                      style: GoogleFonts.montserrat(),
+                    ),
+                  );
+                }
+                if (snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      "No collection entries found.",
+                      style: GoogleFonts.montserrat(fontSize: 18),
+                    ),
+                  );
+                }
+
+                double totalCollected = 0.0;
+                Map<String, double> monthlyTotals = {};
+                List<Map<String, dynamic>> entries = [];
+                for (var doc in snapshot.data!.docs) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  entries.add(data);
+                  if (data.containsKey("amount")) {
+                    double amt = (data["amount"] as num).toDouble();
+                    totalCollected += amt;
+                    DateTime date = (data["date"] as Timestamp).toDate();
+                    String monthYear =
+                        "${date.year}-${date.month.toString().padLeft(2, '0')}";
+                    monthlyTotals.update(monthYear, (value) => value + amt,
+                        ifAbsent: () => amt);
+                  }
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Graph Statistics: Bar Chart of monthly totals.
+                      _buildBarChart(monthlyTotals),
+                      const SizedBox(height: 16),
+                      // Summary Header
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                        margin: const EdgeInsets.only(bottom: 16.0),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            "Total Collected: ₹${totalCollected.toStringAsFixed(2)}",
+                            style: GoogleFonts.montserrat(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blueGrey,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                      // List of Collection Entries
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: entries.length,
+                          itemBuilder: (context, index) {
+                            final entry = entries[index];
+                            DateTime date =
+                            (entry["date"] as Timestamp).toDate();
+                            String dateStr =
+                                "${date.toLocal().toString().split(' ')[0]}";
+                            return Padding(
+                              padding:
+                              const EdgeInsets.symmetric(vertical: 10),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('lib/assets/back2.png'),
+                                    fit: BoxFit.fill,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Card(
+                                  margin: const EdgeInsets.all(8.0),
+                                  elevation: 4,
+                                  color: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListTile(
+                                    title: Text(
+                                      "₹${(entry['amount'] as num).toDouble().toStringAsFixed(2)}",
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      "Date: $dateStr\nPayment: ${entry['paymentMethod']}\nNotes: ${entry['notes'] ?? ''}",
+                                      style: GoogleFonts.montserrat(
+                                          fontSize: 14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 class CollectionEntryPage extends StatefulWidget {
   final String customerId;
 
@@ -534,16 +923,38 @@ class _CollectionEntryPageState extends State<CollectionEntryPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Use a Stack to provide the background image and gradient overlay.
     return Scaffold(
-      // Use a Stack to display background image and gradient overlay.
+      appBar:AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.assignment, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              'Collection Entry',
+              style: GoogleFonts.montserrat(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.blueGrey,
+      ),
       body: Stack(
         children: [
+          // Background image
           Positioned.fill(
             child: Image.asset(
               'lib/assets/back.png',
               fit: BoxFit.cover,
             ),
           ),
+          // White-to-transparent gradient overlay
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -561,145 +972,165 @@ class _CollectionEntryPageState extends State<CollectionEntryPage> {
           SafeArea(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Display customer information
-                  Text(
-                    'Customer: $customerName',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueGrey,
-                    ),
+                : Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height -
+                        kToolbarHeight -
+                        MediaQuery.of(context).padding.top,
                   ),
-                  const SizedBox(height: 20),
-                  Form(
-                    key: _formKey,
+                  child: IntrinsicHeight(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Amount Received Field
-                        TextFormField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Amount Received',
-                            labelStyle: GoogleFonts.montserrat(),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
+                        // White container for the form with rounded corners and shadow.
+                        Container(
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter amount';
-                            }
-                            if (double.tryParse(value) == null) {
-                              return 'Enter valid number';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        // Date Picker Field
-                        GestureDetector(
-                          onTap: _selectDate,
-                          child: AbsorbPointer(
-                            child: TextFormField(
-                              decoration: InputDecoration(
-                                labelText:
-                                'Date: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
-                                labelStyle: GoogleFonts.montserrat(),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.stretch,
+                              children: [
+                                // Amount Received Field
+                                TextFormField(
+                                  controller: _amountController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    labelText: 'Amount Received',
+                                    labelStyle:
+                                    GoogleFonts.montserrat(),
+                                    border: OutlineInputBorder(
+                                      borderRadius:
+                                      BorderRadius.circular(8.0),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter amount';
+                                    }
+                                    if (double.tryParse(value) == null) {
+                                      return 'Enter valid number';
+                                    }
+                                    return null;
+                                  },
                                 ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Payment Method Dropdown
-                        DropdownButtonFormField<String>(
-                          value: _paymentMethod,
-                          decoration: InputDecoration(
-                            labelText: 'Payment Method',
-                            labelStyle: GoogleFonts.montserrat(),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          ),
-                          items: <String>['Cash', 'Card', 'Online']
-                              .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(
-                                value,
-                                style: GoogleFonts.montserrat(),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _paymentMethod = newValue!;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        // Notes Field (optional)
-                        TextFormField(
-                          controller: _notesController,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            labelText: 'Notes (optional)',
-                            labelStyle: GoogleFonts.montserrat(),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Submit Button
-                        Center(
-                          child: ElevatedButton(
-                            onPressed: _submitEntry,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueGrey,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                            ),
-                            child: Text(
-                              'Submit Entry',
-                              style: GoogleFonts.montserrat(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
+                                const SizedBox(height: 16),
+                                // Date Picker Field
+                                GestureDetector(
+                                  onTap: _selectDate,
+                                  child: AbsorbPointer(
+                                    child: TextFormField(
+                                      decoration: InputDecoration(
+                                        labelText:
+                                        'Date: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
+                                        labelStyle:
+                                        GoogleFonts.montserrat(),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                          BorderRadius.circular(8.0),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                // Payment Method Dropdown
+                                DropdownButtonFormField<String>(
+                                  value: _paymentMethod,
+                                  decoration: InputDecoration(
+                                    labelText: 'Payment Method',
+                                    labelStyle:
+                                    GoogleFonts.montserrat(),
+                                    border: OutlineInputBorder(
+                                      borderRadius:
+                                      BorderRadius.circular(8.0),
+                                    ),
+                                  ),
+                                  items: <String>['Cash', 'Card', 'Online']
+                                      .map<DropdownMenuItem<String>>(
+                                          (String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(
+                                            value,
+                                            style: GoogleFonts.montserrat(),
+                                          ),
+                                        );
+                                      }).toList(),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      _paymentMethod = newValue!;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                // Notes Field (optional)
+                                TextFormField(
+                                  controller: _notesController,
+                                  maxLines: 3,
+                                  decoration: InputDecoration(
+                                    labelText: 'Notes (optional)',
+                                    labelStyle:
+                                    GoogleFonts.montserrat(),
+                                    border: OutlineInputBorder(
+                                      borderRadius:
+                                      BorderRadius.circular(8.0),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                // Submit Button
+                                Center(
+                                  child: ElevatedButton(
+                                    onPressed: _submitEntry,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                      Colors.blueGrey,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 40,
+                                          vertical: 16),
+                                      shape:
+                                      RoundedRectangleBorder(
+                                        borderRadius:
+                                        BorderRadius.circular(8.0),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Submit Entry',
+                                      style: GoogleFonts.montserrat(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
         ],
-      ),
-      appBar: AppBar(
-        title: Text(
-          'Collection Entry',
-          style: GoogleFonts.montserrat(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.blueGrey,
       ),
     );
   }
