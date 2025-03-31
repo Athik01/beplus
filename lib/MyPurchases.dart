@@ -1,8 +1,9 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class MyPurchases extends StatefulWidget {
   @override
@@ -35,7 +36,7 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal.shade800, Colors.teal.shade200],
+              colors: [Colors.blueGrey.shade800, Colors.blueGrey.shade200],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -43,7 +44,7 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
         ),
         title: Text(
           'My Purchases',
-          style: TextStyle(
+          style: GoogleFonts.montserrat(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -80,65 +81,56 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
           ),
           indicatorSize: TabBarIndicatorSize.tab,
           indicatorPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          labelColor: Colors.teal,
+          labelColor: Colors.blueGrey.shade800,
           unselectedLabelColor: Colors.white.withOpacity(0.7),
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16.0,
-          ),
-          unselectedLabelStyle: TextStyle(
-            fontWeight: FontWeight.normal,
-            fontSize: 14.0,
-          ),
+          labelStyle: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16.0),
+          unselectedLabelStyle: GoogleFonts.montserrat(fontWeight: FontWeight.normal, fontSize: 14.0),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Stack(
         children: [
-          // First Tab: Use a Stack with background image and white fading overlay
-          Stack(
-            children: [
-              // Background image
-              Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('lib/assets/myproducts.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              // White fading overlay with multiple stops for gradual fade
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white,                        // full white at the top
-                      Colors.white.withOpacity(0.8),
-                      Colors.white.withOpacity(0.5),
-                      Colors.white.withOpacity(0.0),
-                    ],
-                    stops: [0.0, 0.3, 0.6, 1.0],
-                  ),
-                ),
-              ),
-              // Your product list content
-              _buildProductList('done'),
-            ],
+          // Background image
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
+            ),
           ),
-          // Second Tab: Use a simple container with a light teal background
-          Container(
-            color: Colors.teal[50],
-            child: _buildProductList('Confirmed'),
+          // White fading gradient overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.9),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Main content: TabBarView
+          TabBarView(
+            controller: _tabController,
+            children: [
+              // First Tab
+              Container(
+                color: Colors.transparent,
+                child: _buildProductList('done'),
+              ),
+              // Second Tab
+              Container(
+                color: Colors.transparent,
+                child: _buildProductList('Confirmed'),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
-
-
-
 
   // Method to build the list of products based on the order status
   Widget _buildProductList(String status) {
@@ -157,29 +149,28 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.shopping_cart_outlined,
                   size: 80.0,
-                  color: Colors.teal[300],
+                  color: Colors.blueGrey.shade300,
                 ),
                 SizedBox(height: 20),
                 Text(
                   'No orders found!',
-                  style: TextStyle(
+                  style: GoogleFonts.montserrat(
                     fontSize: 24.0,
                     fontWeight: FontWeight.bold,
-                    color: Colors.teal[700],
+                    color: Colors.blueGrey.shade700,
                   ),
                 ),
                 SizedBox(height: 10),
                 Text(
                   'It looks like you don\'t have any orders yet.\nTry browsing our products!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.montserrat(
                     fontSize: 16.0,
-                    color: Colors.teal[500],
+                    color: Colors.blueGrey.shade500,
                   ),
                 ),
                 SizedBox(height: 20),
@@ -187,9 +178,12 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: Text('Browse Products', style: TextStyle(color: Colors.white)),
+                  child: Text(
+                    'Browse Products',
+                    style: GoogleFonts.montserrat(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.blueGrey,
                     padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 12.0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30.0),
@@ -202,9 +196,9 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
         }
 
         final orders = snapshot.data!.docs;
-        Map<String, Map<int, int>> consolidatedOrders = {}; // Consolidated orders map
-
         // Consolidate orders based on productId and selectedSize
+        Map<String, Map<int, int>> consolidatedOrders = {};
+
         for (var order in orders) {
           var productId = order['productId'];
           var selectedSize = Map<int, int>.from(
@@ -234,20 +228,20 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
               builder: (context, productSnapshot) {
                 if (productSnapshot.connectionState == ConnectionState.waiting) {
                   return Card(
-                    color: Colors.teal[100],
+                    color: Colors.blueGrey.shade100,
                     margin: EdgeInsets.all(10),
                     child: ListTile(
-                      title: Text('Loading product details...'),
+                      title: Text('Loading product details...', style: GoogleFonts.montserrat()),
                     ),
                   );
                 }
 
                 if (!productSnapshot.hasData) {
                   return Card(
-                    color: Colors.teal[100],
+                    color: Colors.blueGrey.shade100,
                     margin: EdgeInsets.all(10),
                     child: ListTile(
-                      title: Text('Product not found'),
+                      title: Text('Product not found', style: GoogleFonts.montserrat()),
                     ),
                   );
                 }
@@ -255,7 +249,12 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
                 var product = productSnapshot.data!;
                 var imageUrlBase64 = product['imageUrl'];
                 var productname = product['name'];
-                var imageBytes = base64Decode(imageUrlBase64);
+                var imageBytes = imageUrlBase64 != null && imageUrlBase64.isNotEmpty
+                    ? base64Decode(imageUrlBase64)
+                    : null;
+                final image = imageBytes != null
+                    ? Image.memory(imageBytes, fit: BoxFit.cover)
+                    : Image.asset('assets/default_image.png', fit: BoxFit.cover);
 
                 // Build size & quantity widgets
                 List<Widget> sizeWidgets = [];
@@ -263,12 +262,12 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
                   sizeWidgets.add(
                     Text(
                       'Size: $size, Quantity: $quantity',
-                      style: TextStyle(color: Colors.teal[700]),
+                      style: GoogleFonts.montserrat(color: Colors.blueGrey.shade700),
                     ),
                   );
                 });
 
-                // Animated card with premium design and border
+                // Animated card with premium design and border image
                 return TweenAnimationBuilder(
                   tween: Tween<double>(begin: 0.95, end: 1.0),
                   duration: Duration(milliseconds: 500),
@@ -289,7 +288,7 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: Colors.teal.shade300,
+                          color: Colors.blueGrey.shade300,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(20),
@@ -309,7 +308,7 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
                           width: 90.0,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.teal[200]!, width: 2),
+                            border: Border.all(color: Colors.blueGrey.shade200, width: 2),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -321,16 +320,13 @@ class _MyPurchasesState extends State<MyPurchases> with SingleTickerProviderStat
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.memory(
-                              imageBytes,
-                              fit: BoxFit.cover,
-                            ),
+                            child: image,
                           ),
                         ),
                         title: Text(
                           'Name: $productname',
-                          style: TextStyle(
-                            color: Colors.teal[900],
+                          style: GoogleFonts.montserrat(
+                            color: Colors.blueGrey.shade900,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             shadows: [

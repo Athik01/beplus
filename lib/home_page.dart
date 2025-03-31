@@ -109,79 +109,152 @@ class _HomePage1State extends State<HomePage1> {
 
     return profileCompletion;
   }
+  PreferredSize buildCurvedAppBar() {
+    const double borderThickness = 4.0; // thickness for sides and bottom border image
+    return PreferredSize(
+      preferredSize: Size.fromHeight(kToolbarHeight + borderThickness),
+      child: Container(
+        // Only add padding on left, right, and bottom so that the top edge is not exposed.
+        padding: EdgeInsets.only(left: borderThickness, right: borderThickness, bottom: borderThickness),
+        decoration: BoxDecoration(
+          // The border image is drawn here and will be visible on the sides and bottom.
+          image: DecorationImage(
+            image: AssetImage('lib/assets/back2.png'),
+            fit: BoxFit.cover,
+          ),
+          // Curve the bottom corners of the outer container
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(34),
+            bottomRight: Radius.circular(34),
+          ),
+        ),
+        child: AppBar(
+          centerTitle: true,
+          title: Text(
+            'Retailers !',
+            style: GoogleFonts.montserrat(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blueGrey.shade900, Colors.blueGrey.shade300],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              // Inner container gets its own curve that is slightly smaller so the border image shows.
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
 
   @override
   Widget build(BuildContext context) {
-    // Get the current user data from FirebaseAuth
+    // Get the current user data from FirebaseAuth.
     User? userData = FirebaseAuth.instance.currentUser;
+    String userId = userData?.uid ?? '';
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: 'Hi ',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.normal, // Normal weight for "Hi"
-                  color: Colors.white,
+      // The drawer remains.
+      drawer: _buildCustomDrawer(),
+      appBar: buildCurvedAppBar(),
+      body: Column(
+        children: [
+          // Header below the AppBar with greeting and profile button.
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Builder(builder: (context) {
+                  // Get and process the display name.
+                  String name = userData?.displayName ?? 'User';
+                  // Remove any word that contains digits (and the preceding whitespace).
+                  name = name.replaceAll(RegExp(r'\s+\S*\d+\S*'), '').trim();
+                  // Convert to title case.
+                  name = name.split(' ').map((word) {
+                    if (word.isNotEmpty) {
+                      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+                    }
+                    return '';
+                  }).join(' ');
+                  return Text(
+                    'Hey, $name!',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  );
+                }),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ProfilePage()),
+                    );
+                  },
+                  child: FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userData?.uid)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.grey[300],
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        );
+                      }
+                      if (!snapshot.hasData || !snapshot.data!.exists) {
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.grey[300],
+                          child: Icon(Icons.person, color: Colors.black),
+                        );
+                      }
+                      final userDoc = snapshot.data!.data() as Map<String, dynamic>;
+                      final photoURL = userDoc['photoURL'] ?? '';
+                      if (photoURL.isEmpty) {
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.grey[300],
+                          child: Icon(Icons.person, color: Colors.black),
+                        );
+                      }
+                      return CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage(photoURL),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              TextSpan(
-                text: '${userData?.displayName ?? 'User'}',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold, // Bold weight for the name
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade900, Colors.teal.shade300],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              ],
             ),
           ),
-        ),
-        elevation: 8,
-        shadowColor: Colors.black.withOpacity(0.4),
-        actions: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfilePage()),
-              );
-            },
-              child: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Colors.transparent, Colors.teal],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      offset: Offset(0, 4),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: Icon(Icons.person, color: Colors.white, size: 30),
-              ),
-          ),
+          // The remaining body content.
+          Expanded(child: _buildTabbedView(context, userId)),
         ],
       ),
-      drawer: _buildCustomDrawer(),
-      body: _buildTabbedView(context,userId),
     );
   }
 
@@ -213,64 +286,56 @@ class _HomePage1State extends State<HomePage1> {
           }
 
           return Scaffold(
-            body: Stack(
-              children: [
-                // Background image with white fade effect
-                Container(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('lib/assets/shop.png'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withOpacity(0.5),
-                          Colors.white.withOpacity(0.7),
-                          Colors.white.withOpacity(0.3),
-                        ],
-                        stops: [0.0, 0.7, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-                // Foreground grid of products
-                GridView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // Two products per row
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.65, // Adjusted for better card height
-                  ),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    var product = products[index];
-                    final productId = product['id'];
-                    // Convert product name to have the first letter in caps
-                    final productName = capitalize(product['name'] ?? 'Unnamed Product');
-                    final imageUrl = product['imageUrl'];
+            // UI update: Remove any background image from the scaffold.
+            body: GridView.builder(
+              padding: const EdgeInsets.all(16.0),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // Two products per row
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.65, // Adjusted for better card height
+              ),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                var product = products[index];
+                final productId = product['id'];
+                // Capitalize product name (first letter uppercase)
+                final productName = capitalize(product['name'] ?? 'Unnamed Product');
+                final imageUrl = product['imageUrl'];
 
-                    return InkWell(
+                return InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderPage(productId: productId),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    elevation: 6,
+                    color: Colors.transparent, // Keep card transparent to reveal border
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OrderPage(productId: productId),
-                          ),
-                        );
-                      },
-                      child: Card(
-                        elevation: 6,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        // Border image displayed along sides and bottom
+                        image: DecorationImage(
+                          image: AssetImage('lib/assets/back2.png'),
+                          fit: BoxFit.cover,
                         ),
-                        clipBehavior: Clip.antiAlias,
+                      ),
+                      // Inner container to reveal border image with a semi-transparent background.
+                      child: Container(
+                        margin: const EdgeInsets.all(8.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Stack(
                           children: [
                             // Product Image with Hero animation
@@ -285,11 +350,11 @@ class _HomePage1State extends State<HomePage1> {
                               )
                                   : Container(
                                 width: double.infinity,
-                                color: Colors.grey[300],
+                                color: Colors.grey.shade300,
                                 child: Center(
                                   child: Text(
                                     'No Image',
-                                    style: TextStyle(
+                                    style: GoogleFonts.montserrat(
                                       fontSize: 16,
                                       color: Colors.black54,
                                     ),
@@ -308,7 +373,7 @@ class _HomePage1State extends State<HomePage1> {
                                   gradient: LinearGradient(
                                     colors: [
                                       Colors.transparent,
-                                      Colors.black.withOpacity(0.7)
+                                      Colors.blueGrey.withOpacity(0.7)
                                     ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
@@ -318,7 +383,7 @@ class _HomePage1State extends State<HomePage1> {
                                   productName,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: GoogleFonts.montserrat(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                     color: Colors.white,
@@ -337,10 +402,10 @@ class _HomePage1State extends State<HomePage1> {
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  ),
+                );
+              },
             ),
           );
         }
@@ -412,15 +477,13 @@ class _HomePage1State extends State<HomePage1> {
           .get(),
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
+          return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
           return Center(
             child: Text(
               'Error: ${snapshot.error}',
-              style: TextStyle(fontSize: 16, color: Colors.red),
+              style: GoogleFonts.montserrat(fontSize: 16, color: Colors.red),
             ),
           );
         }
@@ -428,12 +491,11 @@ class _HomePage1State extends State<HomePage1> {
           return Center(
             child: Text(
               'No matching requests found.',
-              style: TextStyle(fontSize: 16),
+              style: GoogleFonts.montserrat(fontSize: 16),
             ),
           );
         }
 
-        // Display the ownerIds in cards
         final requestDocs = snapshot.data!.docs;
         return ListView.builder(
           itemCount: requestDocs.length,
@@ -444,16 +506,14 @@ class _HomePage1State extends State<HomePage1> {
               future: FirebaseFirestore.instance.collection('users').doc(ownerId).get(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
                   return Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
                       'Error loading owner details',
-                      style: TextStyle(fontSize: 16, color: Colors.red),
+                      style: GoogleFonts.montserrat(fontSize: 16, color: Colors.red),
                     ),
                   );
                 }
@@ -462,7 +522,7 @@ class _HomePage1State extends State<HomePage1> {
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
                       'Owner details not found',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: GoogleFonts.montserrat(fontSize: 16, color: Colors.grey),
                     ),
                   );
                 }
@@ -480,71 +540,91 @@ class _HomePage1State extends State<HomePage1> {
                       ),
                     );
                   },
+                  borderRadius: BorderRadius.circular(16),
                   child: Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     elevation: 6,
+                    color: Colors.transparent, // Keep card transparent to show border image.
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.teal,
-                            child: Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : '?',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  name,
-                                  style: TextStyle(
-                                    fontSize: 18,
+                    clipBehavior: Clip.antiAlias,
+                    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        image: DecorationImage(
+                          image: AssetImage('lib/assets/back2.png'),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      // Inner container with margin reveals the border image.
+                      child: Container(
+                        margin: const EdgeInsets.all(8.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.94),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundColor: Colors.blueGrey,
+                                child: Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                SizedBox(height: 8),
-                                Row(
+                              ),
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      Icons.store_mall_directory,
-                                      color: Colors.grey[700],
-                                      size: 18,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        shopName,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.grey[700],
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                                    Text(
+                                      name,
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blueGrey.shade900,
                                       ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.store_mall_directory,
+                                          color: Colors.blueGrey.shade700,
+                                          size: 18,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            shopName,
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 16,
+                                              color: Colors.blueGrey.shade700,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              Icon(
+                                Icons.chevron_right,
+                                color: Colors.blueGrey.shade400,
+                              ),
+                            ],
                           ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.grey,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -556,6 +636,7 @@ class _HomePage1State extends State<HomePage1> {
       },
     );
   }
+
 
 
   Widget _buildBills() {
@@ -583,7 +664,7 @@ class _HomePage1State extends State<HomePage1> {
                       color: Colors.black.withOpacity(0.1),
                       spreadRadius: 2,
                       blurRadius: 5,
-                      offset: Offset(0, 3), // Offset for the shadow
+                      offset: Offset(0, 3),
                     ),
                   ],
                 ),
@@ -596,26 +677,17 @@ class _HomePage1State extends State<HomePage1> {
                       color: Colors.redAccent,
                       size: 60,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       'No orders found!',
-                      style: TextStyle(
+                      style: GoogleFonts.montserrat(
                         color: Colors.grey,
                         fontSize: 20,
                         fontStyle: FontStyle.italic,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    Text(
-                      '                                                               ',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -626,8 +698,6 @@ class _HomePage1State extends State<HomePage1> {
         final orders = snapshot.data!.docs
             .where((order) => order['userId'] == currentUserId)
             .toList();
-        final int count = orders.length;
-        int test = 0;
         if (orders.isEmpty) {
           return const Center(child: Text('No matching orders found.'));
         }
@@ -637,142 +707,142 @@ class _HomePage1State extends State<HomePage1> {
             doneCount++;
           }
         });
-        return doneCount == orders.length
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.hourglass_empty_rounded,
-                size: 100,
-                color: Colors.tealAccent,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'No Orders in the Queue!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal.shade700,
+        if (doneCount == orders.length) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.hourglass_empty_rounded,
+                  size: 100,
+                  color: Colors.blueGrey.shade200,
                 ),
-              ),
-              SizedBox(height: 15),
-              Text(
-                'You haven’t placed any orders yet.\nStart shopping and place new orders 😉!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.teal.shade500,
-                ),
-              ),
-              SizedBox(height: 25),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MyPurchases()),
-                  );
-                },
-                icon: Icon(
-                  Icons.shopping_cart,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  'My Purchases!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                const SizedBox(height: 20),
+                Text(
+                  'No Orders in the Queue!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey.shade700,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ) : // Add other UI for non-empty orders here
-        ListView.builder(
-          itemCount: orders.length,
-          itemBuilder: (context, index) {
-            final order = orders[index];
-            final orderId = orders[index].id;
-            final productId = order['productId'];
-            final status = order['status'];
-            final amount = order['totalAmount'];
-            final orderDate = order['orderDate'];
-            final selectedSize = order['selectedSize'];
-            return StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance.collection('products').doc(productId).snapshots(),
-              builder: (context, productSnapshot) {
-                if (productSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (productSnapshot.hasError) {
-                  return const Center(child: Text('Error loading product details.'));
-                }
-
-                if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
-                  return const Center(child: Text('Product not found.'));
-                }
-                final product = productSnapshot.data!;
-                final productName = product['name'];
-                final base64Image = product['imageUrl'];
-
-                // Decode the base64 image string
-                final imageBytes = base64.decode(base64Image);
-                final image = Image.memory(imageBytes);
-                return GestureDetector(
-                  onTap: () {
-                    // Show the dialog when the card is clicked
-                    showDialog(
-                      context: context,
+                const SizedBox(height: 15),
+                Text(
+                  'You haven’t placed any orders yet.\nStart shopping and place new orders 😉!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 16,
+                    color: Colors.blueGrey.shade500,
+                  ),
+                ),
+                const SizedBox(height: 25),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MyPurchases()),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.shopping_cart,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'My Purchases!',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueGrey,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          return ListView.builder(
+            itemCount: orders.length,
+            itemBuilder: (context, index) {
+              final order = orders[index];
+              final orderId = orders[index].id;
+              final productId = order['productId'];
+              final status = order['status'];
+              final amount = order['totalAmount'];
+              final orderDate = order['orderDate'];
+              final selectedSize = order['selectedSize'];
+              return StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance.collection('products').doc(productId).snapshots(),
+                builder: (context, productSnapshot) {
+                  if (productSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (productSnapshot.hasError) {
+                    return const Center(child: Text('Error loading product details.'));
+                  }
+                  if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
+                    return const Center(child: Text('Product not found.'));
+                  }
+                  final product = productSnapshot.data!;
+                  final productName = product['name'];
+                  final base64Image = product['imageUrl'];
+                  final imageBytes = base64.decode(base64Image);
+                  final image = Image.memory(imageBytes, fit: BoxFit.cover);
+                  return GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
                         builder: (BuildContext context) {
                           return AlertDialog(
                             title: Container(
                               padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
                               decoration: BoxDecoration(
-                                color: Colors.teal.shade100, // Light background color for emphasis
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
+                                color: Colors.blueGrey.shade100,
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(8.0)),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.1),
                                     blurRadius: 4,
-                                    offset: Offset(0, 2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between the title and close icon
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Row(
                                     children: [
                                       Icon(
                                         Icons.info_outline,
-                                        color: Colors.teal,
+                                        color: Colors.blueGrey,
                                         size: 24.0,
                                       ),
                                       const SizedBox(width: 8.0),
                                       Text(
                                         'Product Details',
-                                        style: TextStyle(
-                                          fontSize: 20, // Larger font size for emphasis
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.teal.shade800, // Darker text color for contrast
+                                          color: Colors.blueGrey.shade800,
                                         ),
                                       ),
                                     ],
                                   ),
                                   IconButton(
-                                    icon: Icon(
+                                    icon: const Icon(
                                       Icons.close,
-                                      color: Colors.red, // Red color for close icon
-                                      size: 24.0, // Adjust size as needed
+                                      color: Colors.red,
+                                      size: 24.0,
                                     ),
                                     onPressed: () {
-                                      Navigator.of(context).pop(); // Close the dialog when clicked
+                                      Navigator.of(context).pop();
                                     },
                                   ),
                                 ],
@@ -782,112 +852,105 @@ class _HomePage1State extends State<HomePage1> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Product Image with rounded border for a more polished look
                                   ClipOval(
                                     child: SizedBox(
-                                      height: 100, // Adjust the image height
-                                      width: 100, // Adjust the image width for a smaller size
+                                      height: 100,
+                                      width: 100,
                                       child: image,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  // Product Name with increased emphasis
                                   Text(
                                     'Product Name: $productName',
-                                    style: TextStyle(
+                                    style: GoogleFonts.montserrat(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.teal.shade800, // Darker color for emphasis
+                                      color: Colors.blueGrey.shade800,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Status: $status',
-                                    style: TextStyle(
+                                    style: GoogleFonts.montserrat(
                                       fontSize: 14,
-                                      color: Colors.grey[600], // Slightly darker grey for better readability
+                                      color: Colors.grey[600],
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Amount: ₹${amount.toStringAsFixed(2)}',
-                                    style: TextStyle(
+                                    style: GoogleFonts.montserrat(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.teal,
+                                      color: Colors.blueGrey,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Order Date: ${DateFormat('yMMMd').format(orderDate.toDate())}',
-                                    style: TextStyle(
+                                    style: GoogleFonts.montserrat(
                                       fontSize: 14,
-                                      color: Colors.grey[600], // Similar color as status for consistency
+                                      color: Colors.grey[600],
                                     ),
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
                                     'Selected Sizes:',
-                                    style: TextStyle(
+                                    style: GoogleFonts.montserrat(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.teal.shade800, // Matches the product name for visual cohesion
+                                      color: Colors.blueGrey.shade800,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Wrap(
-                                    spacing: 8.0, // Space between chips
-                                    runSpacing: 4.0, // Space between lines of chips
+                                    spacing: 8.0,
+                                    runSpacing: 4.0,
                                     children: selectedSize.entries.map<Widget>((entry) {
                                       return Chip(
                                         label: Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                           child: Text(
                                             'Size: ${entry.key} - Quantity ${entry.value}',
-                                            style: TextStyle(color: Colors.white, fontSize: 14),
+                                            style: GoogleFonts.montserrat(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                            ),
                                           ),
                                         ),
-                                        backgroundColor: Colors.teal.shade700, // Slightly darker teal for better contrast
-                                        elevation: 2, // Adds subtle shadow for depth
+                                        backgroundColor: Colors.blueGrey.shade700,
+                                        elevation: 2,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8.0), // Rounded corners for a modern look
+                                          borderRadius: BorderRadius.circular(8.0),
                                         ),
                                       );
                                     }).toList(),
                                   ),
                                   const SizedBox(height: 16),
-
-                                  // Cancel Order Button if not done or confirmed
-                                  if (status == 'Not Confirmed' && status != 'Confirmed' || status != 'done')
+                                  if ((status == 'Not Confirmed' && status != 'Confirmed') || status != 'done')
                                     Center(
                                       child: Padding(
-                                        padding: const EdgeInsets.all(20.0), // Padding around the button
+                                        padding: const EdgeInsets.all(20.0),
                                         child: SizedBox(
-                                          width: double.infinity, // Make the button span the full width
-                                          child: ElevatedButton(
+                                          width: double.infinity,
+                                          child: ElevatedButton.icon(
                                             onPressed: () async {
                                               try {
-                                                // Replace 'orderId' with the actual variable holding the order ID
                                                 await FirebaseFirestore.instance
                                                     .collection('orders')
                                                     .doc(orderId)
                                                     .delete();
-
-                                                // Show a success message
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   SnackBar(
-                                                    backgroundColor: Colors.teal, // Success color
+                                                    backgroundColor: Colors.blueGrey,
                                                     content: Row(
                                                       children: [
-                                                        Icon(
-                                                          Icons.check_circle, // Success icon
-                                                          color: Colors.white,
-                                                        ),
-                                                        SizedBox(width: 8), // Spacing between icon and text
+                                                        const Icon(Icons.check_circle, color: Colors.white),
+                                                        const SizedBox(width: 8),
                                                         Expanded(
                                                           child: Text(
                                                             'Order Cancelled',
-                                                            style: TextStyle(
+                                                            style: GoogleFonts.montserrat(
                                                               color: Colors.white,
                                                               fontWeight: FontWeight.bold,
                                                               fontSize: 15,
@@ -896,27 +959,23 @@ class _HomePage1State extends State<HomePage1> {
                                                         ),
                                                       ],
                                                     ),
-                                                    duration: Duration(seconds: 3), // Display duration
-                                                    behavior: SnackBarBehavior.floating, // Floating snackbar
+                                                    duration: const Duration(seconds: 3),
+                                                    behavior: SnackBarBehavior.floating,
                                                   ),
                                                 );
                                                 Navigator.of(context).pop();
                                               } catch (e) {
-                                                // Show an error message if something goes wrong
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   SnackBar(
-                                                    backgroundColor: Colors.red, // Error color
+                                                    backgroundColor: Colors.red,
                                                     content: Row(
                                                       children: [
-                                                        Icon(
-                                                          Icons.error, // Error icon
-                                                          color: Colors.white,
-                                                        ),
-                                                        SizedBox(width: 8), // Spacing between icon and text
+                                                        const Icon(Icons.error, color: Colors.white),
+                                                        const SizedBox(width: 8),
                                                         Expanded(
                                                           child: Text(
                                                             'Error deleting order: $e',
-                                                            style: TextStyle(
+                                                            style: GoogleFonts.montserrat(
                                                               color: Colors.white,
                                                               fontWeight: FontWeight.bold,
                                                               fontSize: 16,
@@ -925,37 +984,27 @@ class _HomePage1State extends State<HomePage1> {
                                                         ),
                                                       ],
                                                     ),
-                                                    duration: Duration(seconds: 3), // Display duration
-                                                    behavior: SnackBarBehavior.floating, // Floating snackbar
+                                                    duration: const Duration(seconds: 3),
+                                                    behavior: SnackBarBehavior.floating,
                                                   ),
                                                 );
                                               }
                                             },
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.red, // Button color
-                                              padding: EdgeInsets.symmetric(vertical: 15.0), // Padding inside the button
+                                              backgroundColor: Colors.red,
+                                              padding: const EdgeInsets.symmetric(vertical: 15.0),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12.0), // Rounded corners
+                                                borderRadius: BorderRadius.circular(12.0),
                                               ),
                                             ),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center, // Center content
-                                              children: [
-                                                Icon(
-                                                  Icons.delete_rounded, // Icon for the button
-                                                  color: Colors.white, // Icon color
-                                                  size: 20, // Icon size
-                                                ),
-                                                SizedBox(width: 8), // Spacing between icon and text
-                                                Text(
-                                                  'Cancel Order',
-                                                  style: TextStyle(
-                                                    fontSize: 15, // Text size
-                                                    fontWeight: FontWeight.bold, // Bold text
-                                                    color: Colors.white, // Text color
-                                                  ),
-                                                ),
-                                              ],
+                                            icon: const Icon(Icons.delete_rounded, color: Colors.white, size: 20),
+                                            label: Text(
+                                              'Cancel Order',
+                                              style: GoogleFonts.montserrat(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -965,77 +1014,109 @@ class _HomePage1State extends State<HomePage1> {
                               ),
                             ),
                           );
-                        }
-                    );
-                  },
-                  child: Visibility(
+                        },
+                      );
+                    },
+                    child: Visibility(
                       visible: status != 'done',
                       child: Card(
                         margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                         elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              ClipOval(
-                                child: SizedBox(
-                                  height: 100, // Adjust the image height
-                                  width: 100, // Adjust the image width for a smaller size
-                                  child: image,
-                                ),
-                              ),
-                              const SizedBox(width: 16), // Space between the image and details
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center, // Center the content vertically
-                                  children: [
-                                    Text(
-                                      '$productName',
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        color: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            image: const DecorationImage(
+                              image: AssetImage('lib/assets/back2.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.94),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  ClipOval(
+                                    child: SizedBox(
+                                      height: 100,
+                                      width: 100,
+                                      child: image,
                                     ),
-                                    const SizedBox(height: 8),
-                                    Row(
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
-                                          status == 'Confirmed' ? 'Confirmed' : '$status',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: status == 'Confirmed' ? Colors.teal : Colors.grey,
+                                          '$productName',
+                                          style: GoogleFonts.montserrat(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blueGrey.shade900,
                                           ),
                                         ),
-                                        if (status == 'Confirmed')
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 4.0),
-                                            child: Icon(
-                                              Icons.check_circle_rounded,
-                                              color: Colors.blue,
-                                              size: 16,
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              status == 'Confirmed' ? 'Confirmed' : '$status',
+                                              style: GoogleFonts.montserrat(
+                                                fontSize: 14,
+                                                color: status == 'Confirmed'
+                                                    ? Colors.blueGrey
+                                                    : Colors.grey,
+                                              ),
                                             ),
+                                            if (status == 'Confirmed')
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 4.0),
+                                                child: Icon(
+                                                  Icons.check_circle_rounded,
+                                                  color: Colors.blue,
+                                                  size: 16,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '₹${amount.toStringAsFixed(2)}',
+                                          style: GoogleFonts.montserrat(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blueGrey,
                                           ),
+                                        ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '₹${amount.toStringAsFixed(2)}',
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                );
-              },
-            );
-          },
-        );
+                  );
+                },
+              );
+            },
+          );
+        }
       },
     );
   }
+
 
 
   Widget _buildCustomDrawer() {
@@ -1048,49 +1129,67 @@ class _HomePage1State extends State<HomePage1> {
       ),
       child: Column(
         children: [
-          DrawerHeader(
+          // Outer container for border image on sides and bottom (not on top)
+          Container(
+            padding: EdgeInsets.only(left: 8, right: 8, bottom: 8),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.shade900, Colors.teal.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              image: DecorationImage(
+                image: AssetImage('lib/assets/back2.png'),
+                fit: BoxFit.cover,
               ),
+              // Apply rounded corners only to bottom corners
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+                bottomLeft: Radius.circular(38), // slightly larger than inner header
+                bottomRight: Radius.circular(38),
               ),
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: NetworkImage(
-                      widget.user?.photoURL ??
-                          'https://www.w3schools.com/howto/img_avatar.png',
+            child: DrawerHeader(
+              margin: EdgeInsets.zero,
+              padding: EdgeInsets.zero,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blueGrey.shade900, Colors.blueGrey.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                // Inner header rounded bottom corners.
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundImage: NetworkImage(
+                        widget.user?.photoURL ??
+                            'https://www.w3schools.com/howto/img_avatar.png',
+                      ),
+                      backgroundColor: Colors.white,
+                      child: widget.user?.photoURL == null
+                          ? Icon(Icons.person, size: 50, color: Colors.blueGrey)
+                          : null,
                     ),
-                    backgroundColor: Colors.white,
-                    child: widget.user?.photoURL == null
-                        ? Icon(Icons.person, size: 50, color: Colors.teal)
-                        : null,
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    widget.user?.displayName ?? 'User Name',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(color: Colors.black45, blurRadius: 4),
-                      ],
+                    SizedBox(height: 10),
+                    Text(
+                      widget.user?.displayName ?? 'User Name',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(color: Colors.black45, blurRadius: 4),
+                        ],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1123,8 +1222,7 @@ class _HomePage1State extends State<HomePage1> {
                     );
                   }),
                   _buildCustomDivider(),
-                  _buildDrawerItem(
-                      Icons.shopping_bag_outlined, 'Purchase Bills', () {
+                  _buildDrawerItem(Icons.shopping_bag_outlined, 'Purchase Bills', () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1142,22 +1240,6 @@ class _HomePage1State extends State<HomePage1> {
                         );
                       }),
                   _buildCustomDivider(),
-                  _buildDrawerItem(Icons.logout, 'Logout', () async {
-                    try {
-                      await FirebaseAuth.instance.signOut();
-                      final GoogleSignIn googleSignIn = GoogleSignIn();
-                      if (await googleSignIn.isSignedIn()) {
-                        await googleSignIn.signOut();
-                        await googleSignIn.disconnect();
-                      }
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginApp()),
-                      );
-                    } catch (e) {
-                      print('Error during logout: $e');
-                    }
-                  }),
                 ],
               ),
             ),
@@ -1169,13 +1251,12 @@ class _HomePage1State extends State<HomePage1> {
 
   Widget _buildCustomDivider() {
     return Divider(
-      color: Colors.grey.shade300,
+      color: Colors.blueGrey.shade200,
       thickness: 1,
       indent: 16,
       endIndent: 16,
     );
   }
-
 
   Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
     return Padding(
@@ -1185,10 +1266,10 @@ class _HomePage1State extends State<HomePage1> {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          splashColor: Colors.teal.shade100,
+          splashColor: Colors.blueGrey.shade100,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.teal.shade50, // Light teal background
+              color: Colors.blueGrey.shade50,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -1202,19 +1283,19 @@ class _HomePage1State extends State<HomePage1> {
               leading: Container(
                 padding: const EdgeInsets.all(6.0),
                 decoration: BoxDecoration(
-                  color: Colors.teal.shade100,
+                  color: Colors.blueGrey.shade100,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.teal.shade700,
+                  color: Colors.blueGrey.shade700,
                   size: 28,
                 ),
               ),
               title: Text(
                 title,
-                style: TextStyle(
-                  color: Colors.teal.shade800,
+                style: GoogleFonts.montserrat(
+                  color: Colors.blueGrey.shade800,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1222,7 +1303,7 @@ class _HomePage1State extends State<HomePage1> {
               trailing: Icon(
                 Icons.arrow_forward_ios,
                 size: 18,
-                color: Colors.teal.shade400,
+                color: Colors.blueGrey.shade400,
               ),
             ),
           ),
@@ -1508,7 +1589,7 @@ class _HomePage1State extends State<HomePage1> {
                 'My Recent Purchases 🛍️',
                 style: GoogleFonts.montserrat(
                   color: Colors.blueGrey.shade900,
-                  fontSize: 25,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
                 ),
@@ -1562,7 +1643,7 @@ class _HomePage1State extends State<HomePage1> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 4,
-                        shadowColor: Colors.blueGrey.withOpacity(0.3),
+                        shadowColor: Colors.blueGrey.withOpacity(0.5),
                         color: Colors.transparent, // make card transparent to show background
                         margin: const EdgeInsets.symmetric(vertical: 10),
                         child: Container(
@@ -1577,7 +1658,7 @@ class _HomePage1State extends State<HomePage1> {
                           child: Container(
                             margin: const EdgeInsets.all(8.0),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.85),
+                              color: Colors.white.withOpacity(0.94),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ListTile(
@@ -1876,10 +1957,10 @@ class _HomePage1State extends State<HomePage1> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Text(
-                'My Wishlist! ❤️',
+                'My Favorites ❤️',
                 style: GoogleFonts.montserrat(
                   color: Colors.blueGrey.shade900,
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
                   shadows: [

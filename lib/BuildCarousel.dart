@@ -54,7 +54,9 @@ class _BuildCarouselState extends State<BuildCarousel> {
         height: 8,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
-          color: _currentIndex == i ? Colors.teal : Colors.white70,
+          color: _currentIndex == i
+              ? Colors.blueGrey.shade700
+              : Colors.blueGrey.shade200,
         ),
       );
     });
@@ -91,40 +93,53 @@ class _BuildCarouselState extends State<BuildCarousel> {
                   );
                 },
                 child: Container(
+                  // Outer container with border image and shadow.
                   margin: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
+                    image: const DecorationImage(
+                      image: AssetImage('lib/assets/back2.png'),
+                      fit: BoxFit.cover,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.blueGrey.withOpacity(0.3),
                         blurRadius: 8,
                         offset: Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          _imageList[index],
-                          fit: BoxFit.cover,
-                        ),
-                        // Subtle gradient overlay for a premium look.
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.black.withOpacity(0.3),
-                                Colors.transparent,
-                              ],
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
+                  child: Container(
+                    // Inner container with margin to reveal border image.
+                    margin: const EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            _imageList[index],
+                            fit: BoxFit.cover,
+                          ),
+                          // BlueGrey gradient overlay for a premium look.
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.blueGrey.withOpacity(0.3),
+                                  Colors.transparent,
+                                ],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -9,6 +9,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:horizontal_week_calendar/horizontal_week_calendar.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 class ViewCustomerBills extends StatefulWidget {
   final String customerId;
 
@@ -28,6 +30,8 @@ class _ViewBillsState extends State<ViewCustomerBills> {
   String? selectedOrderDate;
   DateTime selectedDate = DateTime.now();
   bool isCalendarVisible = false; // Controls the visibility of the calendar
+  List<Map<String, dynamic>> billsData = [];
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +66,7 @@ class _ViewBillsState extends State<ViewCustomerBills> {
           throw 'PDF data is empty';
         }
       } else {
-        throw 'No bill founds';
+        throw 'No bills found';
       }
     } catch (e) {
       setState(() {
@@ -110,26 +114,40 @@ class _ViewBillsState extends State<ViewCustomerBills> {
     }
   }
 
-  List<Map<String, dynamic>> billsData = [];
+  List _getFilteredBills() {
+    return billsData.where((bill) {
+      var orderDate = bill['orderDate'];
+      DateTime parsedDate;
+
+      // Handle possible timestamp or DateTime
+      if (orderDate is Timestamp) {
+        parsedDate = orderDate.toDate();
+      } else if (orderDate is DateTime) {
+        parsedDate = orderDate;
+      } else {
+        parsedDate = DateTime.now();
+      }
+      // Compare only the date part
+      return DateFormat('yyyy-MM-dd').format(parsedDate) ==
+          DateFormat('yyyy-MM-dd').format(selectedDate);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal.shade900,
+      backgroundColor: Colors.blueGrey.shade900,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60.0),
         child: AppBar(
           flexibleSpace: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF00695C), // Dark teal
-                  Color(0xFF26A69A), // Light teal
-                ],
+                colors: [Colors.blueGrey.shade800, Colors.blueGrey.shade200],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black26,
                   blurRadius: 10,
@@ -142,12 +160,12 @@ class _ViewBillsState extends State<ViewCustomerBills> {
           title: Center(
             child: Text(
               'View & Share Bills',
-              style: TextStyle(
-                fontSize: 24,
+              style: GoogleFonts.montserrat(
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
                 color: Colors.white,
-                shadows: [
+                shadows: const [
                   Shadow(
                     color: Colors.black26,
                     offset: Offset(1, 1),
@@ -164,7 +182,7 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                 padding: const EdgeInsets.only(right: 12.0),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(30),
-                  splashColor: Colors.tealAccent.withOpacity(0.3),
+                  splashColor: Colors.blueGrey.withOpacity(0.3),
                   onTap: () {
                     setState(() {
                       isCalendarVisible = !isCalendarVisible;
@@ -173,9 +191,9 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.teal.shade800,
+                      color: Colors.blueGrey.shade800,
                       shape: BoxShape.circle,
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black26,
                           blurRadius: 5,
@@ -197,33 +215,31 @@ class _ViewBillsState extends State<ViewCustomerBills> {
       ),
       body: Stack(
         children: [
-          // Background Image
+          // Background Image (if bill-specific, else you can change to a common asset)
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('lib/assets/bill.png'),
+                image: AssetImage('lib/assets/back2.png'),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-
-          // Teal Gradient Overlay
+          // BlueGrey Gradient Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.teal.shade900.withOpacity(0.9), // Darker at the top
-                  Colors.teal.shade700.withOpacity(0.5), // Medium shade
-                  Colors.teal.shade500.withOpacity(0.5), // Lighter shade
-                  Colors.teal.shade900.withOpacity(0.9), // Lightest at the bottom
+                  Colors.blueGrey.shade900.withOpacity(0.9),
+                  Colors.blueGrey.shade700.withOpacity(0.7),
+                  Colors.blueGrey.shade500.withOpacity(0.7),
+                  Colors.blueGrey.shade900.withOpacity(0.9),
                 ],
                 stops: const [0.0, 0.4, 0.7, 1.0],
               ),
             ),
           ),
-
           // Main Content
           SafeArea(
             child: Padding(
@@ -250,7 +266,6 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                         },
                       ),
                     ),
-
                   // Main Content Display
                   Expanded(
                     child: Center(
@@ -272,26 +287,6 @@ class _ViewBillsState extends State<ViewCustomerBills> {
     );
   }
 
-
-  List _getFilteredBills() {
-    return billsData.where((bill) {
-      var orderDate = bill['orderDate'];
-      DateTime parsedDate;
-
-      // Handle possible timestamp or DateTime
-      if (orderDate is Timestamp) {
-        parsedDate = orderDate.toDate();
-      } else if (orderDate is DateTime) {
-        parsedDate = orderDate;
-      } else {
-        parsedDate = DateTime.now();
-      }
-
-      // Compare only the date part (year-month-day)
-      return DateFormat('yyyy-MM-dd').format(parsedDate) == DateFormat('yyyy-MM-dd').format(selectedDate);
-    }).toList();
-  }
-
   Widget _buildOrderList() {
     List filteredBills = _getFilteredBills();
     if (filteredBills.isEmpty) {
@@ -301,12 +296,12 @@ class _ViewBillsState extends State<ViewCustomerBills> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.warning_rounded, // You can choose a different icon
+              const Icon(
+                Icons.warning_rounded,
                 size: 40,
                 color: Colors.orange,
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
               Text(
                 'No Bills Found',
                 style: TextStyle(
@@ -315,7 +310,7 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Text(
                 'It looks like you have no bills at the moment. Try adding some!',
                 textAlign: TextAlign.center,
@@ -333,31 +328,25 @@ class _ViewBillsState extends State<ViewCustomerBills> {
       itemCount: filteredBills.length,
       itemBuilder: (context, index) {
         var orderDate = filteredBills[index]['orderDate'];
-        TimeOfDay orderTime;
-        // Convert Timestamp to DateTime if orderDate is a Timestamp
         DateTime parsedDate;
         if (orderDate is Timestamp) {
-          parsedDate = orderDate.toDate(); // Convert Timestamp to DateTime
+          parsedDate = orderDate.toDate();
         } else if (orderDate is DateTime) {
-          parsedDate = orderDate; // If it's already a DateTime object
+          parsedDate = orderDate;
         } else {
-          parsedDate = DateTime.now(); // Default to current date if the type is unexpected
+          parsedDate = DateTime.now();
         }
-        orderTime = TimeOfDay(
-          hour: parsedDate.hour,
-          minute: parsedDate.minute,
-        );
-        // Format the parsed DateTime
         String formattedDate = DateFormat('dd MMM yyyy').format(parsedDate);
-        String dayOfWeek = DateFormat('EEEE').format(parsedDate); // Get the day of the week
+        String dayOfWeek = DateFormat('EEEE').format(parsedDate);
+        TimeOfDay orderTime = TimeOfDay(hour: parsedDate.hour, minute: parsedDate.minute);
 
         return Card(
-          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 6,
-          color: Colors.teal.shade50,
+          color: Colors.blueGrey.shade50,
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
@@ -365,49 +354,49 @@ class _ViewBillsState extends State<ViewCustomerBills> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.calendar_today, color: Colors.teal, size: 26),
-                    SizedBox(width: 10),
+                    Icon(Icons.calendar_today, color: Colors.blueGrey, size: 26),
+                    const SizedBox(width: 10),
                     Text(
                       'Order Date: $formattedDate',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade800,
+                        color: Colors.blueGrey.shade800,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.today, color: Colors.teal, size: 26),
-                    SizedBox(width: 10),
+                    Icon(Icons.today, color: Colors.blueGrey, size: 26),
+                    const SizedBox(width: 10),
                     Text(
                       'Day: $dayOfWeek',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.teal.shade700,
+                        color: Colors.blueGrey.shade700,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.access_time, color: Colors.teal, size: 26), // Icon for time
-                    SizedBox(width: 10),
+                    Icon(Icons.access_time, color: Colors.blueGrey, size: 26),
+                    const SizedBox(width: 10),
                     Text(
-                      'Order Time: ${orderTime.format(context)}', // Display the time in a readable format
+                      'Order Time: ${orderTime.format(context)}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.teal.shade700,
+                        color: Colors.blueGrey.shade700,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
@@ -415,13 +404,13 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                       _loadPdf(filteredBills[index]['pdfBase64']);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal.shade700, // Button color
+                      backgroundColor: Colors.blueGrey.shade700,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    icon: Icon(Icons.picture_as_pdf, size: 20, color: Colors.white),
-                    label: Text(
+                    icon: const Icon(Icons.picture_as_pdf, size: 20, color: Colors.white),
+                    label: const Text(
                       'View Bill',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
@@ -447,8 +436,8 @@ class _ViewBillsState extends State<ViewCustomerBills> {
               // Semi-transparent background
               Container(
                 height: 620,
-                margin: const EdgeInsets.symmetric(horizontal: 12), // Reduced margin for more width
-                padding: const EdgeInsets.all(20), // Slightly increased padding
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(24),
@@ -465,7 +454,6 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                   ],
                 ),
               ),
-
               // Apply the blur effect
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
@@ -482,7 +470,7 @@ class _ViewBillsState extends State<ViewCustomerBills> {
                     child: localPath == null
                         ? const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.tealAccent),
+                        valueColor: AlwaysStoppedAnimation(Colors.blueGrey),
                       ),
                     )
                         : PDFView(
@@ -506,17 +494,15 @@ class _ViewBillsState extends State<ViewCustomerBills> {
             ],
           ),
         ),
-
         const SizedBox(height: 30),
-
         // Enhanced Share Button with Gradient and Shadow
         ElevatedButton.icon(
           onPressed: _sharePdf,
-          icon: const Icon(Icons.share, size: 24, color: Colors.teal),
+          icon: const Icon(Icons.share, size: 24, color: Colors.blueGrey),
           label: const Text(
             'Share Bill',
             style: TextStyle(
-              color: Colors.teal,
+              color: Colors.blueGrey,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -532,7 +518,7 @@ class _ViewBillsState extends State<ViewCustomerBills> {
           ).copyWith(
             backgroundColor: MaterialStateProperty.resolveWith((states) {
               if (states.contains(MaterialState.pressed)) {
-                return Colors.teal.shade700;
+                return Colors.blueGrey.shade700;
               }
               return null;
             }),
@@ -543,11 +529,10 @@ class _ViewBillsState extends State<ViewCustomerBills> {
     );
   }
 
-
   Widget _buildLoadingState() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+      children: const [
         CircularProgressIndicator(),
         SizedBox(height: 20),
         Text(
@@ -562,26 +547,26 @@ class _ViewBillsState extends State<ViewCustomerBills> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.error, size: 60, color: Colors.red),
-        SizedBox(height: 20),
-        Text(
+        const Icon(Icons.error, size: 60, color: Colors.red),
+        const SizedBox(height: 20),
+        const Text(
           'Something went wrong!',
           style: TextStyle(fontSize: 22, color: Colors.red),
         ),
-        SizedBox(height: 10),
-        Text(
+        const SizedBox(height: 10),
+        const Text(
           'Unable to fetch the bill. Please try again.',
           style: TextStyle(fontSize: 16, color: Colors.grey),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _retryFetchBill,
-          child: Text('Retry'),
+          child: const Text('Retry'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
-            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-            textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ],

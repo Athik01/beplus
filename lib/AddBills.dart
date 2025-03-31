@@ -1,9 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:beplus/ViewBillScreen.dart';
 import 'package:beplus/recognizeMe.dart';
 import 'CustomCustomerBill.dart';
 import 'AddNewCreditScreen.dart';
-import 'dart:ui';
+import 'package:google_fonts/google_fonts.dart';
 
 class AddCustomerBills extends StatefulWidget {
   final String customerId;
@@ -27,88 +28,138 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Customer Bills',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: 1.2,
-            color: Colors.white,
-            shadows: [
-              Shadow(color: Colors.black54, offset: Offset(2, 2), blurRadius: 5)
-            ],
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF004D40), Color(0xFF26A69A)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      // Wrap the body in a Stack to include the background image and a white-fading overlay
+      body: Stack(
+        children: [
+          // Background image from assets
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
             ),
           ),
-        ),
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        child: _selectedIndex == 0
-            ? _buildAddOptions()
-            : ViewBillsScreen(),
+          // White fading overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.8),
+                    Colors.white.withOpacity(0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Main content area with the animated switcher
+          Column(
+            children: [
+              _buildAppBar(),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  child: _selectedIndex == 0
+                      ? _buildGlassAddOptions()  // Updated method with glass container
+                      : ViewBillsScreen(),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       bottomNavigationBar: _buildFloatingTabBar(),
     );
   }
 
-  Widget _buildAddOptions() {
+  // Custom AppBar with gradient background and shader title
+  Widget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      centerTitle: true,
+      title: Text(
+        'Customer Bills',
+        style: GoogleFonts.montserrat(
+          fontWeight: FontWeight.bold,
+          fontSize: 22,
+          letterSpacing: 1.2,
+          foreground: Paint()
+            ..shader = LinearGradient(
+              colors: [Colors.white, Colors.grey.shade300],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
+          shadows: [
+            Shadow(color: Colors.black54, offset: Offset(2, 2), blurRadius: 5)
+          ],
+        ),
+      ),
+      backgroundColor: Colors.blueGrey, // Set solid blueGrey background
+    );
+  }
+
+  // New method that wraps the add options in a glass container (frosted glass effect)
+  Widget _buildGlassAddOptions() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'Choose an option to proceed',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.teal,
-              fontStyle: FontStyle.italic,
-              letterSpacing: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Choose an option to proceed',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 1,
+                      color: Colors.blueGrey,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+                  _customAnimatedButton(
+                    icon: Icons.edit,
+                    label: 'Add Manually',
+                    color: Colors.blueGrey.shade700,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CustomBill(customerId: widget.customerId),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _customAnimatedButton(
+                    icon: Icons.camera_alt,
+                    label: 'Scan Document',
+                    color: Colors.blueGrey.shade900,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => RecognizeMeApp()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 30),
-
-          _customAnimatedButton(
-            icon: Icons.edit,
-            label: 'Add Manually',
-            color: Colors.teal.shade700,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      CustomBill(customerId: widget.customerId),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 20),
-
-          _customAnimatedButton(
-            icon: Icons.camera_alt,
-            label: 'Scan Document',
-            color: Colors.teal.shade900,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => RecognizeMeApp()),
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -122,7 +173,7 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
-      splashColor: Colors.tealAccent.withOpacity(0.4),
+      splashColor: Colors.white.withOpacity(0.4),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
@@ -148,7 +199,7 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
             const SizedBox(width: 12),
             Text(
               label,
-              style: const TextStyle(
+              style: GoogleFonts.montserrat(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -160,11 +211,9 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
     );
   }
 
-
   Widget _buildFloatingTabBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-      // Added a scale animation to the whole tab bar for an engaging entrance
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.95, end: 1.0),
         duration: const Duration(milliseconds: 300),
@@ -180,20 +229,19 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.teal.shade800.withOpacity(0.85),
-                    Colors.teal.shade400.withOpacity(0.85),
+                    Colors.blueGrey.shade800.withOpacity(0.85),
+                    Colors.blueGrey.shade400.withOpacity(0.85),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-                // Enhanced the shadow for a deeper premium look
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
                     blurRadius: 10,
-                    offset: Offset(0, 5),
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
@@ -233,7 +281,6 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
   }
 
   Widget _buildTabIcon(IconData icon, bool isSelected) {
-    // Added a scaling animation to each icon for a dynamic effect
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(
           begin: isSelected ? 0.8 : 1.0, end: isSelected ? 1.0 : 0.8),
@@ -252,9 +299,9 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
               boxShadow: isSelected
                   ? [
                 BoxShadow(
-                  color: Colors.tealAccent.withOpacity(0.4),
+                  color: Colors.white.withOpacity(0.4),
                   blurRadius: 6,
-                  offset: Offset(0, 3),
+                  offset: const Offset(0, 3),
                 )
               ]
                   : [],
@@ -262,12 +309,11 @@ class _AddCustomerBillsState extends State<AddCustomerBills> {
             child: Icon(
               icon,
               size: isSelected ? 24 : 20,
-              color: isSelected ? Colors.tealAccent : Colors.white70,
+              color: isSelected ? Colors.black : Colors.white70,
             ),
           ),
         );
       },
     );
   }
-
 }

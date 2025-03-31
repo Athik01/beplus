@@ -5,35 +5,39 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:d_chart/d_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 class ChartData {
   final String itemName;
   final double itemTotal;
 
-  // Constructor should be named parameters
+  // Constructor with named parameters
   ChartData({required this.itemName, required this.itemTotal});
 }
+
 // Function to get the permanent storage path (app's private directory)
 Future<String> getBeplusStoragePath(String fileName) async {
   final appDocDir = await getApplicationDocumentsDirectory(); // App's private documents directory
-  final beplusDir = Directory('${appDocDir.path}/BEplus'); // Create a dedicated folder for BEplus
+  final beplusDir = Directory('${appDocDir.path}/BEplus'); // Dedicated folder for BEplus
 
   if (!await beplusDir.exists()) {
-    await beplusDir.create(recursive: true); // Ensure the folder exists
+    await beplusDir.create(recursive: true);
   }
 
-  return "${beplusDir.path}/$fileName"; // Return the full file path
+  return "${beplusDir.path}/$fileName";
 }
+
 Future<List<Map<String, dynamic>>> loadDataFromExcel(String fileName) async {
-  final filePath = await getBeplusStoragePath(fileName); // Use private storage path
+  final filePath = await getBeplusStoragePath(fileName);
   final file = File(filePath);
 
   if (await file.exists()) {
     final bytes = await file.readAsBytes();
     final excel = Excel.decodeBytes(bytes);
-    final sheet = excel['Sheet1']; // Ensure correct sheet is loaded.
+    final sheet = excel['Sheet1'];
 
     final data = <Map<String, dynamic>>[];
-    for (var row in sheet.rows.skip(1)) { // Skipping header row
+    for (var row in sheet.rows.skip(1)) { // Skip header row
       if (row.isNotEmpty) {
         String itemName = (row[0]?.value ?? '').toString();
         int size = int.tryParse(row[1]?.value.toString() ?? '0') ?? 0;
@@ -63,38 +67,37 @@ Future<List<Map<String, dynamic>>> loadDataFromExcel(String fileName) async {
     throw Exception('Excel file not found in app storage');
   }
 }
+
 List<ChartData> prepareDataForChart(List<Map<String, dynamic>> data) {
   Map<String, double> productSales = {};
-  // Aggregate sales data by product
+
   for (var row in data) {
     String itemName = row['itemName'];
     double itemTotal = row['itemTotal'];
-    // Aggregate sales totals by item
-    if (productSales.containsKey(itemName)) {
-      productSales[itemName] = productSales[itemName]! + itemTotal;
-    } else {
-      productSales[itemName] = itemTotal;
-    }
+    productSales.update(itemName, (existing) => existing + itemTotal,
+        ifAbsent: () => itemTotal);
   }
-  // Convert the aggregated sales data into chart-friendly format
-  return productSales.entries.map((entry) {
-    // Ensure that itemName and itemTotal are passed correctly to ChartData
-    return ChartData(itemName: entry.key, itemTotal: entry.value);
-  }).toList();
+
+  return productSales.entries
+      .map((entry) => ChartData(itemName: entry.key, itemTotal: entry.value))
+      .toList();
 }
+
 class AnalysisScreen extends StatefulWidget {
   @override
   _AnalysisScreenState createState() => _AnalysisScreenState();
 }
+
 class _AnalysisScreenState extends State<AnalysisScreen> {
   late Future<List<Map<String, dynamic>>> _data;
   List<Map<String, dynamic>> _filteredData = [];
   late List<ChartData> _chartData;
   List<Map<String, dynamic>> _bestSellingProducts = [];
   String _selectedFilter = 'All Time';
-
   DateTime _currentStartDate = DateTime.now().subtract(Duration(days: 6));
   List<Map<String, dynamic>> _salesByDate = [];
+
+  String _currentFilter = 'By Date'; // Default filter option
 
   @override
   void initState() {
@@ -109,19 +112,15 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       throw Exception("Storage permission is required to access Excel files.");
     }
   }
-  String _currentFilter = 'By Date';  // Default filter option
 
-// Method to apply selected filter
+  // Apply selected filter option
   void _applyFilterOption(String filterOption) {
     setState(() {
-      // Ensure the filterOption is non-null before setting
-      if (filterOption != null) {
-        _currentFilter = filterOption;
-      }
+      _currentFilter = filterOption;
     });
   }
 
-// Method to format the date range for the selected filter
+  // Format the date range based on the selected filter
   String _getFormattedDateRange() {
     if (_currentFilter == 'By Date') {
       return "${DateFormat('dd/MM').format(_currentStartDate)} - ${DateFormat('dd/MM').format(_currentStartDate.add(Duration(days: 6)))}";
@@ -133,10 +132,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     return '';
   }
 
-// Method to get filtered sales data based on the selected filter
+  // Get filtered sales data based on the selected filter
   List<OrdinalData> _getFilteredSalesData() {
-    // Ensure _salesByDate is not null
-    if (_salesByDate == null) return [];
+    if (_salesByDate.isEmpty) return [];
 
     if (_currentFilter == 'By Date') {
       return _salesByDate
@@ -145,7 +143,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         try {
           timestamp = DateTime.parse(data['timestamp']);
         } catch (e) {
-          // Handle invalid timestamp or missing data
           return false;
         }
         return timestamp.isAfter(_currentStartDate) && timestamp.isBefore(_currentStartDate.add(Duration(days: 7)));
@@ -169,51 +166,37 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     return [];
   }
 
-// Method to consolidate sales by month using timestamp
+  // Consolidate sales by month using timestamp
   List<Map<String, dynamic>> _consolidateByMonth() {
     Map<String, double> monthRevenueMap = {};
-
-    // Ensure _salesByDate is not null
-    if (_salesByDate == null) return [];
-
     _salesByDate.forEach((data) {
       DateTime timestamp;
       try {
         timestamp = DateTime.parse(data['timestamp']);
       } catch (e) {
-        // Handle invalid timestamp or missing data
         return;
       }
-
       String monthKey = DateFormat('MM/yyyy').format(timestamp);
       monthRevenueMap[monthKey] = (monthRevenueMap[monthKey] ?? 0) + data['revenue'];
     });
-
     return monthRevenueMap.entries
         .map((entry) => {'month': entry.key, 'revenue': entry.value})
         .toList();
   }
 
-// Method to consolidate sales by year using timestamp
+  // Consolidate sales by year using timestamp
   List<Map<String, dynamic>> _consolidateByYear() {
     Map<String, double> yearRevenueMap = {};
-
-    // Ensure _salesByDate is not null
-    if (_salesByDate == null) return [];
-
     _salesByDate.forEach((data) {
       DateTime timestamp;
       try {
         timestamp = DateTime.parse(data['timestamp']);
       } catch (e) {
-        // Handle invalid timestamp or missing data
         return;
       }
-
       String yearKey = DateFormat('yyyy').format(timestamp);
       yearRevenueMap[yearKey] = (yearRevenueMap[yearKey] ?? 0) + data['revenue'];
     });
-
     return yearRevenueMap.entries
         .map((entry) => {'year': entry.key, 'revenue': entry.value})
         .toList();
@@ -286,13 +269,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   void _updateChartDataForDateRange() {
     DateTime start = _currentStartDate;
     DateTime end = _currentStartDate.add(Duration(days: 6));
-
     Map<String, double> revenueByDate = {};
 
     for (var row in _filteredData) {
       DateTime rowDate = DateFormat('yyyy-MM-dd').parse(row['timestamp']);
       String formattedDate = DateFormat('dd/MM').format(rowDate);
-
       if (rowDate.isAfter(start.subtract(Duration(days: 1))) && rowDate.isBefore(end.add(Duration(days: 1)))) {
         revenueByDate.update(formattedDate, (value) => value + double.parse(row['itemTotal'].toString()),
             ifAbsent: () => double.parse(row['itemTotal'].toString()));
@@ -302,7 +283,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     setState(() {
       _salesByDate = List.generate(7, (index) {
         String dateLabel = DateFormat('dd/MM').format(start.add(Duration(days: index)));
-        return {'date': dateLabel, 'revenue': revenueByDate[dateLabel] ?? 0};
+        return {'date': dateLabel, 'revenue': revenueByDate[dateLabel] ?? 0, 'timestamp': start.add(Duration(days: index)).toIso8601String()};
       });
     });
   }
@@ -317,450 +298,456 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Updated AppBar with a matching gradient and shader title
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
           elevation: 0,
-          backgroundColor: Colors.transparent,
+          centerTitle: true,
           flexibleSpace: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF00695C), // Dark Teal
-                  Color(0xFF26A69A), // Light Teal
-                ],
+                colors: [Colors.blueGrey.shade800, Colors.blueGrey.shade200],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 12,
-                  offset: Offset(0, 5),
-                ),
-              ],
             ),
           ),
-          centerTitle: true,
           title: Text(
             '📊 Sales Analysis',
-            style: const TextStyle(
-              fontSize: 26,
+            style: GoogleFonts.montserrat(
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
               letterSpacing: 1.2,
-              shadows: [
-                Shadow(
-                  color: Colors.black45,
-                  offset: Offset(2, 2),
-                  blurRadius: 4,
-                ),
-              ],
+              foreground: Paint()
+                ..shader = LinearGradient(
+                  colors: [Colors.white, Colors.grey.shade300],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
             ),
           ),
         ),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _data,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Error Icon in a Stylish Circular Container
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.shade100,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.error_outline,
-                      color: Colors.teal,
-                      size: 60,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Custom Error Message
-                  const Text(
-                    'Oops! Something went wrong.',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Subtle Error Description (Optional)
-                  Text(
-                    '${snapshot.error}', // Optional detailed error message
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Retry Button
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {});
-                    },
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text(
-                      'Try Again',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      backgroundColor: Colors.teal.shade800,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 5,
-                      shadowColor: Colors.black45,
-                    ),
-                  ),
-                ],
+      // Stack to include background image with a white-fading overlay
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/back.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.8),
+                    Colors.white.withOpacity(0.8),
+                  ],
+                ),
               ),
-            );
-          } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-            if (_filteredData.isEmpty) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _applyFilter(snapshot.data!, _selectedFilter);
-              });
-            }
-
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Filter Dropdown
-                  DropdownButton<String>(
-                  value: _selectedFilter,
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedFilter = newValue!;
-                      _applyFilter(snapshot.data!, _selectedFilter);  // Reapply the filter when selection changes
-                    });
-                  },
-                  isExpanded: true,
-                  style: TextStyle(fontSize: 16, color: Colors.teal),  // Text style for dropdown items
-                  icon: Icon(
-                    Icons.arrow_drop_down,
-                    color: Colors.teal,  // Custom arrow icon
-                    size: 28,
+            ),
+          ),
+          // Main content area with transparent backgrounds
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: _data,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.shade100,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.error_outline,
+                          color: Colors.blueGrey,
+                          size: 60,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Oops! Something went wrong.',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${snapshot.error}',
+                        style: GoogleFonts.montserrat(fontSize: 14, color: Colors.black54),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 30),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        label: Text(
+                          'Try Again',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          backgroundColor: Colors.blueGrey.shade800,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 5,
+                          shadowColor: Colors.black45,
+                        ),
+                      ),
+                    ],
                   ),
-                  underline: Container(),  // Remove the default underline
-                  dropdownColor: Colors.white,  // Background color for the dropdown when opened
-                  selectedItemBuilder: (BuildContext context) {
-                    return ['All Time', 'Today', 'Yesterday', 'Last Week', 'Last Month']
-                        .map<Widget>((filter) {
-                      return Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                          child: Row(
-                            children: [
-                              Icon(Icons.date_range, color: Colors.teal, size: 20),  // Icon for each filter
-                              SizedBox(width: 12),
-                              Text(
-                                filter,
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal),  // Enhanced font styling
+                );
+              } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                if (_filteredData.isEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _applyFilter(snapshot.data!, _selectedFilter);
+                  });
+                }
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Filter Dropdown
+                        DropdownButton<String>(
+                          value: _selectedFilter,
+                          onChanged: (newValue) {
+                            setState(() {
+                              _selectedFilter = newValue!;
+                              _applyFilter(snapshot.data!, _selectedFilter);
+                            });
+                          },
+                          isExpanded: true,
+                          style: GoogleFonts.montserrat(fontSize: 16, color: Colors.blueGrey),
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.blueGrey,
+                            size: 28,
+                          ),
+                          underline: Container(),
+                          dropdownColor: Colors.white,
+                          selectedItemBuilder: (BuildContext context) {
+                            return ['All Time', 'Today', 'Yesterday', 'Last Week', 'Last Month']
+                                .map<Widget>((filter) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.date_range, color: Colors.blueGrey, size: 20),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        filter,
+                                        style: GoogleFonts.montserrat(
+                                            fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList();
+                          },
+                          items: ['All Time', 'Today', 'Yesterday', 'Last Week', 'Last Month']
+                              .map((filter) {
+                            return DropdownMenuItem<String>(
+                              value: filter,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.blueGrey.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.date_range, color: Colors.blueGrey, size: 20),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      filter,
+                                      style: GoogleFonts.montserrat(
+                                          fontWeight: FontWeight.w500, fontSize: 16, color: Colors.blueGrey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
+                        // Sales Analysis Title
+                        Text("Sales Analysis",
+                            style: GoogleFonts.montserrat(
+                                fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                        const SizedBox(height: 20),
+                        // Date Navigation for Sales Revenue Chart
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.arrow_back_ios, color: Colors.blueGrey),
+                              onPressed: () => _changeDateRange(false),
+                            ),
+                            Text(
+                              "${DateFormat('dd/MM').format(_currentStartDate)} - ${DateFormat('dd/MM').format(_currentStartDate.add(Duration(days: 6)))}",
+                              style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.arrow_forward_ios, color: Colors.blueGrey),
+                              onPressed: () => _changeDateRange(true),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        // Sales Revenue Chart
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: DChartBarO(
+                            groupList: [
+                              OrdinalGroup(
+                                id: 'sales',
+                                data: _salesByDate
+                                    .map((data) => OrdinalData(domain: data['date'], measure: data['revenue']))
+                                    .toList(),
+                                color: Colors.blueGrey,
                               ),
                             ],
                           ),
                         ),
-                      );
-                    }).toList();
-                  },
-                  items: ['All Time', 'Today', 'Yesterday', 'Last Week', 'Last Month']
-                      .map((filter) {
-                    return DropdownMenuItem<String>(
-                      value: filter,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),  // Padding for the items
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),  // Rounded corners for each item
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.teal.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
+                        const SizedBox(height: 30),
+                        Text("Sales Performance",
+                            style: GoogleFonts.montserrat(
+                                fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                        const SizedBox(height: 20),
+                        // Bar Chart for Product Sales
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20.0),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: DChartBarO(
+                              groupList: [
+                                OrdinalGroup(
+                                  id: 'sales',
+                                  data: _chartData
+                                      .map((data) =>
+                                      OrdinalData(domain: data.itemName, measure: data.itemTotal))
+                                      .toList(),
+                                  color: Colors.blueGrey,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.date_range, color: Colors.teal, size: 20),  // Icon for each filter
-                            SizedBox(width: 12),
-                            Text(
-                              filter,
-                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: Colors.teal),  // Enhanced font styling
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                  SizedBox(height: 20),
-
-                    // Sales Performance
-                    Text("Sales Analysis", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal)),
-
-                    SizedBox(height: 20),
-
-                    // Sales Analysis with Date Navigation
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.arrow_back_ios, color: Colors.teal),
-                          onPressed: () => _changeDateRange(false),
-                        ),
-                        Text(
-                          "${DateFormat('dd/MM').format(_currentStartDate)} - ${DateFormat('dd/MM').format(_currentStartDate.add(Duration(days: 6)))}",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.arrow_forward_ios, color: Colors.teal),
-                          onPressed: () => _changeDateRange(true),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 10),
-
-                    // Sales Revenue Chart
-                    AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: DChartBarO(
-                        groupList: [
-                          OrdinalGroup(
-                            id: 'sales',
-                            // Display all data in _salesByDate without any filter applied
-                            data: _salesByDate
-                                .map((data) => OrdinalData(domain: data['date'], measure: data['revenue']))
-                                .toList(),
-                            color: Colors.teal,
                           ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 30),
-
-                    Text("Sales Performance", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal)),
-
-                    SizedBox(height: 20),
-
-                    // Chart Widget
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20.0),
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: DChartBarO(
-                          groupList: [
-                            OrdinalGroup(
-                              id: 'sales',
-                              data: _chartData
-                                  .map((data) => OrdinalData(domain: data.itemName, measure: data.itemTotal))
-                                  .toList(),
-                              color: Colors.teal,
-                            ),
-                          ],
                         ),
-                      ),
-                    ),
-
-                    SizedBox(height: 30),
-                    Text("Best Selling Products", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 10),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _bestSellingProducts.length,
-                      itemBuilder: (context, index) {
-                        var product = _bestSellingProducts[index];
-                        return ListTile(
-                          title: Text(product['itemName'], style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text("Quantity: ${product['totalQuantity']} | Revenue: \₹${product['totalRevenue']}"),
-                          leading: Icon(Icons.shopping_bag, color: Colors.teal),
-                        );
-                      },
-                    ),
-
-                    SizedBox(height: 30),
-
-                    // Sales Data Table or No Purchase message
-                    Text("Sales Data", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 10),
-                    _filteredData.isEmpty
-                        ? Center(
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
-                        decoration: BoxDecoration(
-                          color: Colors.teal[50], // Light background color
-                          borderRadius: BorderRadius.circular(15),
-                          boxShadow: [BoxShadow(blurRadius: 8, color: Colors.black12, spreadRadius: 2)],
+                        const SizedBox(height: 30),
+                        Text("Best Selling Products",
+                            style: GoogleFonts.montserrat(
+                                fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                        const SizedBox(height: 10),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: _bestSellingProducts.length,
+                          itemBuilder: (context, index) {
+                            var product = _bestSellingProducts[index];
+                            return ListTile(
+                              title: Text(product['itemName'],
+                                  style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                              subtitle: Text("Quantity: ${product['totalQuantity']} | Revenue: \₹${product['totalRevenue']}",
+                                  style: GoogleFonts.montserrat()),
+                              leading: Icon(Icons.shopping_bag, color: Colors.blueGrey),
+                            );
+                          },
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min, // To ensure the content takes minimal space
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(Icons.remove_shopping_cart, color: Colors.teal, size: 30),
-                            SizedBox(width: 10),
-                            Text(
-                              'No Purchase on that day',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal,
-                                letterSpacing: 1.2, // Add slight spacing between letters for a cleaner look
-                              ),
+                        const SizedBox(height: 30),
+                        Text("Sales Data",
+                            style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        _filteredData.isEmpty
+                            ? Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey[50],
+                              borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                    blurRadius: 8,
+                                    color: Colors.black12,
+                                    spreadRadius: 2)
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    )
-                        :
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.3),
-                              blurRadius: 10,
-                              spreadRadius: 1,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.remove_shopping_cart, color: Colors.blueGrey, size: 30),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'No Purchase on that day',
+                                  style: GoogleFonts.montserrat(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blueGrey,
+                                      letterSpacing: 1.2),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: DataTable(
-                          columnSpacing: 20,
-                          headingRowHeight: 56,
-                          columns: [
-                            DataColumn(
-                              label: Row(
-                                children: [
-                                  Icon(Icons.shopping_cart, color: Colors.teal, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Item',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.teal),
-                                  ),
-                                ],
-                              ),
+                          ),
+                        )
+                            : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.3),
+                                  blurRadius: 10,
+                                  spreadRadius: 1,
+                                ),
+                              ],
                             ),
-                            DataColumn(
-                              label: Row(
-                                children: [
-                                  Text(
-                                    'Qty',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.teal),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            DataColumn(
-                              label: Row(
-                                children: [
-                                  Icon(Icons.currency_rupee, color: Colors.teal, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Total',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.teal),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            DataColumn(
-                              label: Row(
-                                children: [
-                                  Icon(Icons.calendar_today, color: Colors.teal, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Date',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.teal),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          rows: _filteredData.map((row) {
-                            bool isEvenRow = _filteredData.indexOf(row) % 2 == 0;
-                            String formattedDate = '';
-                            if (row['timestamp'] != null) {
-                              DateTime timestamp = DateTime.parse(row['timestamp']); // Assuming it's a valid ISO date string
-                              formattedDate = DateFormat('dd/MM/yyyy').format(timestamp); // Adjust to your desired format
-                            }
-
-                            return DataRow(
-                              color: MaterialStateProperty.resolveWith<Color>(
-                                    (states) => isEvenRow ? Colors.teal[50]! : Colors.white,
-                              ),
-                              cells: [
-                                DataCell(
-                                  Row(
+                            child: DataTable(
+                              columnSpacing: 20,
+                              headingRowHeight: 56,
+                              columns: [
+                                DataColumn(
+                                  label: Row(
                                     children: [
-                                      Icon(Icons.shopping_bag, color: Colors.teal, size: 20),
-                                      SizedBox(width: 10),
-                                      Text(row['itemName'], style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                                      Icon(Icons.shopping_cart, color: Colors.blueGrey, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Item',
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.blueGrey)),
                                     ],
                                   ),
                                 ),
-                                DataCell(
-                                  Text(row['quantity'].toString(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                                DataColumn(
+                                  label: Row(
+                                    children: [
+                                      Text('Qty',
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.blueGrey)),
+                                    ],
+                                  ),
                                 ),
-                                DataCell(
-                                  Text('\₹${row['itemTotal'].toString()}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                                DataColumn(
+                                  label: Row(
+                                    children: [
+                                      Icon(Icons.currency_rupee, color: Colors.blueGrey, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Total',
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.blueGrey)),
+                                    ],
+                                  ),
                                 ),
-                                DataCell(
-                                  Text(formattedDate, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                                DataColumn(
+                                  label: Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, color: Colors.blueGrey, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Date',
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.blueGrey)),
+                                    ],
+                                  ),
                                 ),
                               ],
-                            );
-                          }).toList(),
+                              rows: _filteredData.map((row) {
+                                bool isEvenRow = _filteredData.indexOf(row) % 2 == 0;
+                                String formattedDate = '';
+                                if (row['timestamp'] != null) {
+                                  DateTime timestamp = DateTime.parse(row['timestamp']);
+                                  formattedDate = DateFormat('dd/MM/yyyy').format(timestamp);
+                                }
+                                return DataRow(
+                                  color: MaterialStateProperty.resolveWith<Color>(
+                                          (states) => isEvenRow ? Colors.blueGrey[50]! : Colors.white),
+                                  cells: [
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          Icon(Icons.shopping_bag, color: Colors.blueGrey, size: 20),
+                                          const SizedBox(width: 10),
+                                          Text(row['itemName'],
+                                              style: GoogleFonts.montserrat(
+                                                  fontSize: 14, fontWeight: FontWeight.w500)),
+                                        ],
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Text(row['quantity'].toString(),
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 14, fontWeight: FontWeight.w500)),
+                                    ),
+                                    DataCell(
+                                      Text('\₹${row['itemTotal'].toString()}',
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 14, fontWeight: FontWeight.w500)),
+                                    ),
+                                    DataCell(
+                                      Text(formattedDate,
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 14, fontWeight: FontWeight.w500)),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            );
-          } else {
-            return Center(child: Text('No data available'));
-          }
-        },
+                  ),
+                );
+              } else {
+                return Center(child: Text('No data available', style: GoogleFonts.montserrat()));
+              }
+            },
+          ),
+        ],
       ),
     );
   }
 }
-
-
-
-

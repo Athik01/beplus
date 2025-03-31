@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 
+// Add New Credit Screen
 class AddNewCreditScreen extends StatefulWidget {
   final String userId;
   AddNewCreditScreen({required this.userId});
@@ -32,31 +33,28 @@ class _AddNewCreditScreenState extends State<AddNewCreditScreen> {
           .get();
 
       if (snapshot.docs.isNotEmpty) {
-        // If the username exists, add the new credit to the existing credit
+        // Username exists; update credit
         DocumentSnapshot doc = snapshot.docs.first;
-        int existingCredit = doc['credit'] ?? 0; // Get the existing credit (default to 0 if null)
-        int newCredit = int.parse(credit); // Convert new credit to integer
-        int updatedCredit = existingCredit + newCredit; // Add the new credit to the existing one
+        int existingCredit = doc['credit'] ?? 0;
+        int newCredit = int.parse(credit);
+        int updatedCredit = existingCredit + newCredit;
 
-        // Update the document with the new total credit
         await FirebaseFirestore.instance.collection('credit').doc(doc.id).update({
           'credit': updatedCredit,
         });
 
         _showSnackbar('Credit updated successfully', Colors.green);
       } else {
-        // If the username does not exist, add a new document with the provided credit
+        // Create new document
         await FirebaseFirestore.instance.collection('credit').add({
           'userId': widget.userId,
           'username': username,
-          'credit': int.parse(credit), // Add the credit value
+          'credit': int.parse(credit),
           'timestamp': FieldValue.serverTimestamp(),
         });
-
         _showSnackbar('Credit added successfully', Colors.green);
       }
 
-      // Clear the input fields after submission
       _usernameController.clear();
       _creditController.clear();
     } catch (e) {
@@ -75,14 +73,46 @@ class _AddNewCreditScreenState extends State<AddNewCreditScreen> {
     );
   }
 
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon,
+      {bool isNumeric = false}) {
+    return TextField(
+      controller: controller,
+      keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.blueGrey.shade700),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.6),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.blueGrey.shade700, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      onPressed: _submitCredit,
+      child: Text('Submit Credit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blueGrey.shade700,
+        padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        elevation: 5,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal.shade100,
+      backgroundColor: Colors.blueGrey.shade50,
       appBar: AppBar(
-        title: Text('Add New Credit', style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white)),
+        title: Text('Add New Credit', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
-        backgroundColor: Colors.teal.shade700,
+        backgroundColor: Colors.blueGrey.shade700,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -90,6 +120,7 @@ class _AddNewCreditScreenState extends State<AddNewCreditScreen> {
             padding: const EdgeInsets.all(20.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
+              // Glass container effect
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
@@ -102,7 +133,7 @@ class _AddNewCreditScreenState extends State<AddNewCreditScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // View Credit Button at the Top for Easy Access
+                      // View Credit Button
                       Align(
                         alignment: Alignment.centerRight,
                         child: OutlinedButton.icon(
@@ -110,23 +141,20 @@ class _AddNewCreditScreenState extends State<AddNewCreditScreen> {
                             context,
                             MaterialPageRoute(builder: (context) => ViewCreditScreen(userId: widget.userId)),
                           ),
-                          icon: Icon(Icons.credit_card, color: Colors.teal.shade700),
-                          label: Text('View Credit', style: TextStyle(fontSize: 16, color: Colors.teal.shade700)),
+                          icon: Icon(Icons.credit_card, color: Colors.blueGrey.shade700),
+                          label: Text('View Credit', style: TextStyle(fontSize: 16, color: Colors.blueGrey.shade700)),
                           style: OutlinedButton.styleFrom(
                             padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                            side: BorderSide(color: Colors.teal.shade700, width: 2),
+                            side: BorderSide(color: Colors.blueGrey.shade700, width: 2),
                           ),
                         ),
                       ),
-                      SizedBox(height: 10), // Added space after button
-
+                      SizedBox(height: 10),
                       _buildTextField(_usernameController, 'Enter Username', Icons.person),
                       SizedBox(height: 20),
                       _buildTextField(_creditController, 'Enter Credit', Icons.currency_rupee, isNumeric: true),
                       SizedBox(height: 30),
-
-                      // Submit Button
                       _buildSubmitButton(),
                     ],
                   ),
@@ -138,39 +166,9 @@ class _AddNewCreditScreenState extends State<AddNewCreditScreen> {
       ),
     );
   }
-
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumeric = false}) {
-    return TextField(
-      controller: controller,
-      keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.teal.shade700),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.teal.shade700, width: 2),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    return ElevatedButton(
-      onPressed: _submitCredit,
-      child: Text('Submit Credit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.white)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.teal.shade700,
-        padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        elevation: 5,
-      ),
-    );
-  }
 }
 
+// View Credit Screen
 class ViewCreditScreen extends StatefulWidget {
   final String userId;
   ViewCreditScreen({required this.userId});
@@ -200,7 +198,7 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
 
       setState(() {
         _credits = snapshot.docs.map((doc) => {
-          'creditId': doc.id, // Firestore document ID
+          'creditId': doc.id,
           'username': doc['username'],
           'credit': double.tryParse(doc['credit'].toString()) ?? 0.0,
         }).toList();
@@ -216,8 +214,9 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
   void _filterCredits() {
     setState(() {
       _filteredCredits = _credits.where((credit) {
-        bool matchesSearch =
-        credit['username'].toLowerCase().contains(_searchController.text.toLowerCase());
+        bool matchesSearch = credit['username']
+            .toLowerCase()
+            .contains(_searchController.text.toLowerCase());
         bool matchesFilter = _selectedFilter == null || credit['credit'] >= _selectedFilter!;
         return matchesSearch && matchesFilter;
       }).toList();
@@ -227,11 +226,11 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal.shade100,
+      backgroundColor: Colors.blueGrey.shade50,
       appBar: AppBar(
         title: Text('View Credit', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
-        backgroundColor: Colors.teal.shade700,
+        backgroundColor: Colors.blueGrey.shade700,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -242,7 +241,7 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search by Username',
-                prefixIcon: Icon(Icons.search, color: Colors.teal.shade700),
+                prefixIcon: Icon(Icons.search, color: Colors.blueGrey.shade700),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -250,7 +249,6 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
               onChanged: (value) => _filterCredits(),
             ),
             SizedBox(height: 10),
-
             // Filter Dropdown
             DropdownButton<double>(
               value: _selectedFilter,
@@ -270,7 +268,6 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
               },
             ),
             SizedBox(height: 10),
-
             // Credit List
             Expanded(
               child: _filteredCredits.isEmpty
@@ -283,7 +280,7 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     color: Colors.white,
                     child: ListTile(
-                      leading: Icon(Icons.person, color: Colors.teal.shade700),
+                      leading: Icon(Icons.person, color: Colors.blueGrey.shade700),
                       title: Text(_filteredCredits[index]['username'], style: TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text('Credit: ${_filteredCredits[index]['credit']}', style: TextStyle(fontSize: 16)),
                       onTap: () {
@@ -291,7 +288,7 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => CreditDetailScreen(
-                              creditId: _filteredCredits[index]['creditId'], // Pass Firestore document ID
+                              creditId: _filteredCredits[index]['creditId'],
                               username: _filteredCredits[index]['username'],
                               credit: _filteredCredits[index]['credit'],
                             ),
@@ -309,6 +306,8 @@ class _ViewCreditScreenState extends State<ViewCreditScreen> {
     );
   }
 }
+
+// Credit Detail Screen
 class CreditDetailScreen extends StatefulWidget {
   final String creditId;
   final String username;
@@ -326,9 +325,9 @@ class CreditDetailScreen extends StatefulWidget {
 
 class _CreditDetailScreenState extends State<CreditDetailScreen> {
   final TextEditingController _descriptionController = TextEditingController();
-  List<String> _descriptions = []; // Holds the list of descriptions
-  List<String> _selectedDescriptions = []; // Holds selected descriptions for delete mode
-  bool _isInDeleteMode = false; // Whether the app is in delete mode
+  List<String> _descriptions = [];
+  List<String> _selectedDescriptions = [];
+  bool _isInDeleteMode = false;
 
   @override
   void initState() {
@@ -336,7 +335,6 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
     _fetchDescriptions();
   }
 
-  // Fetch existing descriptions from Firestore
   Future<void> _fetchDescriptions() async {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -351,11 +349,10 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
         });
       }
     } catch (e) {
-
+      // Handle error if necessary
     }
   }
 
-  // Add a new description to Firestore
   Future<void> _addDescription() async {
     String description = _descriptionController.text.trim();
     if (description.isEmpty) {
@@ -367,7 +364,7 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
 
     try {
       await FirebaseFirestore.instance.collection('credit').doc(widget.creditId).update({
-        'descriptions': FieldValue.arrayUnion([description]), // Append new description
+        'descriptions': FieldValue.arrayUnion([description]),
       });
 
       setState(() {
@@ -379,26 +376,20 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
         SnackBar(
           content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white), // Icon to indicate success
+              Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Description added successfully!',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          backgroundColor: Colors.green.shade600, // Green background for success
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10), // Rounded corners for a sleek look
-          ),
+          backgroundColor: Colors.green.shade600,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           elevation: 6,
         ),
       );
@@ -409,32 +400,29 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
     }
   }
 
-  // Toggle delete mode
   void _toggleDeleteMode() {
     setState(() {
       _isInDeleteMode = !_isInDeleteMode;
       if (!_isInDeleteMode) {
-        _selectedDescriptions.clear(); // Clear selected descriptions when exiting delete mode
+        _selectedDescriptions.clear();
       }
     });
   }
 
-  // Toggle description selection
   void _toggleDescriptionSelection(String description) {
     setState(() {
       if (_selectedDescriptions.contains(description)) {
-        _selectedDescriptions.remove(description); // Deselect
+        _selectedDescriptions.remove(description);
       } else {
-        _selectedDescriptions.add(description); // Select
+        _selectedDescriptions.add(description);
       }
     });
   }
 
-  // Delete selected descriptions from Firestore
   Future<void> _deleteSelectedDescriptions() async {
     try {
       await FirebaseFirestore.instance.collection('credit').doc(widget.creditId).update({
-        'descriptions': FieldValue.arrayRemove(_selectedDescriptions), // Remove selected descriptions
+        'descriptions': FieldValue.arrayRemove(_selectedDescriptions),
       });
 
       setState(() {
@@ -442,37 +430,30 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
         _selectedDescriptions.clear();
       });
 
-      // Exit delete mode after deletion
       _toggleDeleteMode();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              Icon(Icons.delete_forever, color: Colors.white), // Trash icon to indicate deletion
+              Icon(Icons.delete_forever, color: Colors.white),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Selected descriptions deleted!',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          backgroundColor: Colors.red.shade600, // Red background to signify deletion
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10), // Rounded corners for modern feel
-          ),
-          elevation: 6, // Elevation to give the SnackBar a floating appearance
-          behavior: SnackBarBehavior.floating, // Floating behavior for the SnackBar
-          duration: Duration(seconds: 3), // Short duration for feedback
-          margin: EdgeInsets.all(16), // Margin for spacing around the SnackBar
+          backgroundColor: Colors.red.shade600,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 6,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+          margin: EdgeInsets.all(16),
         ),
       );
     } catch (e) {
@@ -485,31 +466,26 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal.shade50,
+      backgroundColor: Colors.blueGrey.shade50,
       appBar: AppBar(
         title: Text('Credit Details', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
-        backgroundColor: Colors.teal.shade700,
+        backgroundColor: Colors.blueGrey.shade700,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Username
-            Text('Username:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal.shade700)),
+            Text('Username:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade700)),
             SizedBox(height: 5),
             Text(widget.username, style: TextStyle(fontSize: 18)),
             SizedBox(height: 15),
-
-            // Credit Amount
-            Text('Credit Amount:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal.shade700)),
+            Text('Credit Amount:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade700)),
             SizedBox(height: 5),
             Text(widget.credit.toString(), style: TextStyle(fontSize: 18)),
             SizedBox(height: 20),
-
-            // Displaying Descriptions
-            Text('Descriptions:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal.shade700)),
+            Text('Descriptions:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade700)),
             SizedBox(height: 5),
             Expanded(
               child: _descriptions.isEmpty
@@ -519,7 +495,6 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
                 itemBuilder: (context, index) {
                   String description = _descriptions[index];
                   bool isSelected = _selectedDescriptions.contains(description);
-
                   return GestureDetector(
                     onLongPress: _toggleDeleteMode,
                     onTap: _isInDeleteMode ? () => _toggleDescriptionSelection(description) : null,
@@ -528,15 +503,13 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
                       elevation: 3,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
-                        leading: Icon(Icons.note, color: Colors.teal.shade700),
+                        leading: Icon(Icons.note, color: Colors.blueGrey.shade700),
                         title: Text(description, style: TextStyle(fontSize: 16)),
                         trailing: _isInDeleteMode
                             ? CircleAvatar(
                           radius: 15,
                           backgroundColor: isSelected ? Colors.red : Colors.grey.shade300,
-                          child: isSelected
-                              ? Icon(Icons.check, color: Colors.white, size: 18)
-                              : null,
+                          child: isSelected ? Icon(Icons.check, color: Colors.white, size: 18) : null,
                         )
                             : null,
                       ),
@@ -546,20 +519,17 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
               ),
             ),
             SizedBox(height: 10),
-
-            // If in delete mode, show buttons for delete and cancel
             if (_isInDeleteMode) ...[
               SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Delete Button with icon and more spacing
                   Container(
                     margin: EdgeInsets.symmetric(horizontal: 10),
                     child: ElevatedButton.icon(
                       onPressed: _deleteSelectedDescriptions,
                       icon: Icon(Icons.delete, color: Colors.white),
-                      label: Text('Delete', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white)),
+                      label: Text('Delete', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
@@ -569,16 +539,14 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
                       ),
                     ),
                   ),
-
-                  // Cancel Button with icon and more spacing
                   Container(
                     margin: EdgeInsets.symmetric(horizontal: 10),
                     child: ElevatedButton.icon(
                       onPressed: _toggleDeleteMode,
                       icon: Icon(Icons.cancel, color: Colors.white),
-                      label: Text('Cancel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white)),
+                      label: Text('Cancel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal.shade700,
+                        backgroundColor: Colors.blueGrey.shade700,
                         padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                         elevation: 6,
@@ -590,7 +558,6 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
               ),
               SizedBox(height: 20),
             ],
-            // Add Description Section
             TextField(
               controller: _descriptionController,
               decoration: InputDecoration(
@@ -600,14 +567,12 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
               maxLines: 3,
             ),
             SizedBox(height: 10),
-
-            // Add Description Button
             Center(
               child: ElevatedButton(
                 onPressed: _addDescription,
                 child: Text('Add Description', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal.shade700,
+                  backgroundColor: Colors.blueGrey.shade700,
                   padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 ),
@@ -619,6 +584,3 @@ class _CreditDetailScreenState extends State<CreditDetailScreen> {
     );
   }
 }
-
-
-
